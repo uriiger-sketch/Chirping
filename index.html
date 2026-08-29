@@ -1352,13 +1352,18 @@ function getRegion(lat,lon){
 // Shared Gaussian similarity, hoisted to module scope so scoreSpecies (called up
 // to ~220 times per classification, once per species) never reallocates a closure.
 function gauss(x,mu,sigma){return Math.exp(-0.5*Math.pow((x-mu)/sigma,2));}
-// Scoring weights — chosen by an offline grid sweep over 333 configurations against
-// a 219-species self-recognition benchmark (each species' own call synthesized and
-// checked for correct rank), not hand-picked. A bandwidth-matching term (measured
-// spectral spread vs. each species' known vocal-range width) was tested at several
-// weights/sigmas and never beat wBW=0 — the weighted-std estimate from a handful of
-// scattered peaks is too noisy to trust — so it's left out of the score entirely.
-const SCORE_W={sigmaPeak:700,wPeak:0.85,wRange:0.10,wCentroid:0.05,specBase:1200};
+// Scoring weights — chosen by grid sweeps against a 219-species self-recognition
+// benchmark (tests/accuracy-benchmark.mjs), not hand-picked. First pass: 333 configs
+// against a single clean-noise condition. Second pass: 96 configs re-checked against
+// the realistic scenario (region-filtered + moderate noise, single-attempt accuracy,
+// not optimistic best-of-N) that matches the app's actual default usage. The second
+// sweep moved the needle by under 1.5 percentage points across every metric — evidence
+// this 3-feature model (peak match / range coverage / centroid) has hit its practical
+// ceiling; a bandwidth-matching term was also tried at multiple weights and never beat
+// zero, since a weighted-std estimate from a handful of scattered peaks is too noisy
+// to trust. Meaningfully surpassing this would need new, independently-verifiable
+// acoustic features (e.g. real recording data), not further weight tuning.
+const SCORE_W={sigmaPeak:700,wPeak:0.90,wRange:0.05,wCentroid:0.05,specBase:1200};
 function scoreSpecies(feats,bird){
   if(feats.peaks&&feats.peaks.length>0){
     // Best peak: frequency match weighted by relative amplitude, so a loud true

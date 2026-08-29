@@ -1,0 +1,13 @@
+{
+  "name": "chirping",
+  "private": true,
+  "description": "Zero-API-key, browser-only bird sound classifier. index.html is the entire app — this package.json exists only to run the accuracy benchmark in tests/.",
+  "scripts": {
+    "serve": "http-server -p 8902 -s -c-1",
+    "test:benchmark": "node tests/accuracy-benchmark.mjs"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "playwright": "^1.47.0"
+  }
+}
