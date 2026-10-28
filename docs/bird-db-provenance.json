@@ -1,0 +1,2176 @@
+[
+ {
+  "n": "American Robin",
+  "s": "Turdus migratorius",
+  "changed": [],
+  "c": "h",
+  "cf": "h",
+  "why": "Ref: caroled song; whistled syllables ~2-3.5 kHz, peak ~2.8 kHz; existing values sound."
+ },
+ {
+  "n": "Northern Cardinal",
+  "s": "Cardinalis cardinalis",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Slurred whistle series 1.5-6.5 kHz, trills faster; au = established Hawaii introduction. [merge: au dropped — Hawaii/Pacific-island-only populations lie outside the app’s au realm (Australia, NZ, New Guinea)]"
+ },
+ {
+  "n": "Mourning Dove",
+  "s": "Zenaida macroura",
+  "changed": [
+   "fdom",
+   "fmax"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Perch-coo: main notes ~390 Hz, rising 2nd note ~650 Hz; harmonics weak."
+ },
+ {
+  "n": "Black-capped Chickadee",
+  "s": "Poecile atricapillus",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "h",
+  "cf": "h",
+  "why": "Ref: fee-bee song, pure tones ~4.0 then ~3.3 kHz; broadband chick-a-dee call excluded."
+ },
+ {
+  "n": "American Crow",
+  "s": "Corvus brachyrhynchos",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Ref: caw series; harsh but harmonic, energy ~0.5-3 kHz peaking ~1.4 kHz."
+ },
+ {
+  "n": "Blue Jay",
+  "s": "Cyanocitta cristata",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Ref: harsh 'jay' jeer call given in short series; broadband ~1-5 kHz."
+ },
+ {
+  "n": "Song Sparrow",
+  "s": "Melospiza melodia",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Song mixes intro notes, buzz and trill ~1.5-7.5 kHz; peak ~3.5-4 kHz."
+ },
+ {
+  "n": "House Wren",
+  "s": "Troglodytes aedon",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Bubbling cascade of rapid trilled phrases ~2.5-7 kHz; sy covers Southern House Wren split."
+ },
+ {
+  "n": "Wood Thrush",
+  "s": "Hylocichla mustelina",
+  "changed": [],
+  "c": "h",
+  "cf": "m",
+  "why": "Flute-like ee-oh-lay phrases ~1.5-4 kHz plus high terminal trill."
+ },
+ {
+  "n": "Barred Owl",
+  "s": "Strix varia",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Ref: 'who-cooks-for-you' hoot series; near-tonal, ~0.3-0.8 kHz."
+ },
+ {
+  "n": "Common Loon",
+  "s": "Gavia immer",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Ref: male yodel; dominant ~1.65-2.0 kHz (Mager et al. 2007), harmonic. +eu: Iceland, winter coasts."
+ },
+ {
+  "n": "Killdeer",
+  "s": "Charadrius vociferus",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Ref: strident 'kill-deee' calls; Hz unverified. +sa: resident Peru/Chile race, NW South America winterers."
+ },
+ {
+  "n": "Baltimore Oriole",
+  "s": "Icterus galbula",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Rich whistled song ~1.5-4 kHz; winters regularly in Colombia/Venezuela/Ecuador."
+ },
+ {
+  "n": "American Goldfinch",
+  "s": "Spinus tristis",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Long canary-like twittering warble ~2-7 kHz."
+ },
+ {
+  "n": "Eastern Bluebird",
+  "s": "Sialia sialis",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Soft low warbled whistles mostly 2-4 kHz; prior range too wide, fdom high."
+ },
+ {
+  "n": "Red-tailed Hawk",
+  "s": "Buteo jamaicensis",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "h",
+  "cf": "l",
+  "why": "Ref: hoarse descending kee-eeer scream; energy mostly ~1.5-4 kHz (estimate, not measured)."
+ },
+ {
+  "n": "Downy Woodpecker",
+  "s": "Dryobates pubescens",
+  "changed": [],
+  "c": "h",
+  "cf": "l",
+  "why": "Ref: territorial drum ~16 beats/s; broadband, substrate-dependent spectrum."
+ },
+ {
+  "n": "White-throated Sparrow",
+  "s": "Zonotrichia albicollis",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Pure whistled 'Oh-sweet-Canada' notes ~2.8-4.8 kHz; absolute pitch varies between individuals."
+ },
+ {
+  "n": "Great Blue Heron",
+  "s": "Ardea herodias",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Ref: harsh low 'frahnk' croak; broadband, values unverified."
+ },
+ {
+  "n": "Ruby-throated Hummingbird",
+  "s": "Archilochus colubris",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "No song; ref: chip/chatter calls ~2-8 kHz. Wing hum is not vocal."
+ },
+ {
+  "n": "Carolina Wren",
+  "s": "Thryothorus ludovicianus",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Loud rolling 'tea-kettle' whistled syllables repeated ~3-5/s, ~2-5 kHz."
+ },
+ {
+  "n": "Eastern Towhee",
+  "s": "Pipilo erythrophthalmus",
+  "changed": [
+   "f"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Ref: song, two notes then trill; f corrected: it is the song, not a call."
+ },
+ {
+  "n": "Gray Catbird",
+  "s": "Dumetella carolinensis",
+  "changed": [
+   "f"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Varied warble ~1-7 kHz; f fixed: '100+ species per bout' unsupported, mimicry sparse."
+ },
+ {
+  "n": "Cedar Waxwing",
+  "s": "Bombycilla cedrorum",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "l",
+  "cf": "m",
+  "why": "Genuine Cedar Waxwing. No song; ref: thin trilled 'sreee' call ~7-9 kHz."
+ },
+ {
+  "n": "Red-winged Blackbird",
+  "s": "Agelaius phoeniceus",
+  "changed": [
+   "fdom",
+   "f"
+  ],
+  "c": "l",
+  "cf": "m",
+  "why": "'Conk-la-ree': notes then buzzy trill ~2-5 kHz. Repertoires are ~2-8, not 15."
+ },
+ {
+  "n": "House Finch",
+  "s": "Haemorhous mexicanus",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Long jumbled warble ending buzzy ~2-6 kHz; au = abundant established Hawaii introduction. [merge: au dropped — Hawaii/Pacific-island-only populations lie outside the app’s au realm (Australia, NZ, New Guinea)]"
+ },
+ {
+  "n": "Dark-eyed Junco",
+  "s": "Junco hyemalis",
+  "changed": [
+   "fmin",
+   "fdom"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Ref: musical trill ~3-6 kHz; prior fmin and fdom too low."
+ },
+ {
+  "n": "Yellow Warbler",
+  "s": "Setophaga petechia",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Bright 'sweet-sweet' whistled series ~3.5-7.5 kHz; IOC splits N American birds as aestiva."
+ },
+ {
+  "n": "Great Horned Owl",
+  "s": "Bubo virginianus",
+  "changed": [
+   "fmin"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Ref: deep hoot series; male ~0.25-0.4 kHz, female higher; nothing vocal below ~200 Hz."
+ },
+ {
+  "n": "Northern Mockingbird",
+  "s": "Mimus polyglottos",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Mimetic phrases each repeated 3-6 times, 1-8 kHz; au = established Hawaii introduction. [merge: au dropped — Hawaii/Pacific-island-only populations lie outside the app’s au realm (Australia, NZ, New Guinea)]"
+ },
+ {
+  "n": "Indigo Bunting",
+  "s": "Passerina cyanea",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Paired sharp whistled notes ~3-8 kHz."
+ },
+ {
+  "n": "Ovenbird",
+  "s": "Seiurus aurocapilla",
+  "changed": [
+   "w"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Ref: crescendo 'teacher' series ~3-7 kHz; w set to canonical article title."
+ },
+ {
+  "n": "Chimney Swift",
+  "s": "Chaetura pelagica",
+  "changed": [
+   "r",
+   "f"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Ref: high chippering twitter. f fixed: roosts in chimneys nightly. Winters western Amazonia."
+ },
+ {
+  "n": "Sandhill Crane",
+  "s": "Antigone canadensis",
+  "changed": [
+   "fmin",
+   "fmax",
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Ref: rolling bugle, fundamental ~0.6-1 kHz with rich harmonics; breeds NE Siberia."
+ },
+ {
+  "n": "Common Blackbird",
+  "s": "Turdus merula",
+  "changed": [
+   "fmin",
+   "fdom",
+   "r"
+  ],
+  "c": "m",
+  "cf": "h",
+  "why": "Fluty warble ~1.5-3.5 kHz then soft twitter; NW Africa resident; introduced Australia/NZ."
+ },
+ {
+  "n": "European Robin",
+  "s": "Erithacus rubecula",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Varied liquid high phrases ~2-8 kHz; breeds NW Africa and W Asia/Siberia."
+ },
+ {
+  "n": "Song Thrush",
+  "s": "Turdus philomelos",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Varied phrases repeated 2-4 times ~1.5-6 kHz; Siberian breeder, N Africa winterer, NZ/Australia introduced."
+ },
+ {
+  "n": "Common Chaffinch",
+  "s": "Fringilla coelebs",
+  "changed": [
+   "r",
+   "w"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Descending trill phrases plus flourish ~2-7 kHz; NZ introduced; N African birds now split."
+ },
+ {
+  "n": "Great Tit",
+  "s": "Parus major",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Ref: 'tea-cher' two-note whistles ~3-6 kHz; NW Africa resident."
+ },
+ {
+  "n": "Eurasian Blue Tit",
+  "s": "Cyanistes caeruleus",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "High 'tsee-tsee' then trill ~4-8 kHz; NW African birds are C. teneriffae."
+ },
+ {
+  "n": "Eurasian Wren",
+  "s": "Troglodytes troglodytes",
+  "changed": [
+   "fdom",
+   "r"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Loud rapid trills mostly 4-8 kHz, peak nearer 6 kHz; Maghreb resident."
+ },
+ {
+  "n": "Common Cuckoo",
+  "s": "Cuculus canorus",
+  "changed": [
+   "fmin",
+   "fmax",
+   "r"
+  ],
+  "c": "h",
+  "cf": "h",
+  "why": "Ref: 'cu-coo' ~0.65 then ~0.53 kHz, near-pure tones; winters in Africa."
+ },
+ {
+  "n": "Eurasian Skylark",
+  "s": "Alauda arvensis",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Sustained rapid varied warble ~2-7 kHz; winters N Africa; introduced NZ/SE Australia."
+ },
+ {
+  "n": "Barn Swallow",
+  "s": "Hirundo rustica",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Twittering warble with creaky rattle ~2-7 kHz; winters S America, New Guinea/N Australia."
+ },
+ {
+  "n": "Eurasian Blackcap",
+  "s": "Sylvia atricapilla",
+  "changed": [
+   "n",
+   "w",
+   "fmin",
+   "fdom",
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "IOC name. Warble ending in rich fluting ~2-5 kHz; breeds W Asia."
+ },
+ {
+  "n": "Common Chiffchaff",
+  "s": "Phylloscopus collybita",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Ref: 'chiff-chaff' tonal downslurred notes ~3.5-6.5 kHz; winters N and W Africa."
+ },
+ {
+  "n": "European Goldfinch",
+  "s": "Carduelis carduelis",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Tinkling twittering song ~3-8 kHz; Maghreb resident; introduced Australia/NZ and Uruguay/Argentina."
+ },
+ {
+  "n": "Eurasian Collared Dove",
+  "s": "Streptopelia decaocto",
+  "changed": [
+   "r",
+   "f"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Ref: 3-note coo ~0.45-0.6 kHz. f dates corrected (reached Britain 1955). Introduced N America."
+ },
+ {
+  "n": "Tawny Owl",
+  "s": "Strix aluco",
+  "changed": [
+   "fmin",
+   "fdom",
+   "fmax",
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Ref: male hoot, first note ~0.75-0.85 kHz; ke-wick reaches ~2.5 kHz; W Asia."
+ },
+ {
+  "n": "Yellowhammer",
+  "s": "Emberiza citrinella",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Rapid repeated notes ~4-7 kHz plus drawn-out end note; W Siberia; introduced NZ."
+ },
+ {
+  "n": "Common Starling",
+  "s": "Sturnus vulgaris",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Whistles, clicks, rattles, mimicry 1-7 kHz; W/C Asia; introduced South Africa, Argentina."
+ },
+ {
+  "n": "Common Wood Pigeon",
+  "s": "Columba palumbus",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "r"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Ref: 5-note coo, elements ~0.23-0.65 kHz per published sonogram; Maghreb, W/C Asia."
+ },
+ {
+  "n": "Common Nightingale",
+  "s": "Luscinia megarhynchos",
+  "changed": [
+   "r",
+   "h"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Varied whistles, crescendos, rapid 'jug' series ~1.5-8 kHz; h fixed: breeds north to England/Poland."
+ },
+ {
+  "n": "Common Swift",
+  "s": "Apus apus",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Ref: shrill scream, fundamental ~4-6.5 kHz, harmonic ~8-9 kHz."
+ },
+ {
+  "n": "White Wagtail",
+  "s": "Motacilla alba",
+  "changed": [
+   "n",
+   "w",
+   "r"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "Species name ('pied' = UK race). Twittering song of call-like notes ~3-7 kHz; winters Africa."
+ },
+ {
+  "n": "Dunnock",
+  "s": "Prunella modularis",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Hurried high scratchy warble ~3-8 kHz; breeds Turkey/Caucasus/N Iran; introduced NZ."
+ },
+ {
+  "n": "European Greenfinch",
+  "s": "Chloris chloris",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Twittering trills plus wheezy 'dzweee' ~2-6 kHz; Maghreb; introduced Australia/NZ."
+ },
+ {
+  "n": "Long-tailed Tit",
+  "s": "Aegithalos caudatus",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "No real song; ref: thin 'see' and trilled 'tsirrup' contact calls ~5-9 kHz."
+ },
+ {
+  "n": "Mistle Thrush",
+  "s": "Turdus viscivorus",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Loud fluty short phrases ~2-4.5 kHz; NW Africa resident."
+ },
+ {
+  "n": "Common Pheasant",
+  "s": "Phasianus colchicus",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Ref: 2-note crow, harmonic, fundamental ~0.8-1 kHz (Heinz & Gysel 1970). Introduced NA/NZ/Hawaii."
+ },
+ {
+  "n": "Northern Lapwing",
+  "s": "Vanellus vanellus",
+  "changed": [
+   "r",
+   "f"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "Ref: wheezy 'pee-wit' call; Hz unverified. Winters N Africa. Etymology corrected (hleapewince)."
+ },
+ {
+  "n": "Goldcrest",
+  "s": "Regulus regulus",
+  "changed": [],
+  "c": "h",
+  "cf": "m",
+  "why": "Very high cyclic 'zeedle' song plus flourish ~6-9 kHz."
+ },
+ {
+  "n": "Common Linnet",
+  "s": "Linaria cannabina",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Fast twittering warble ~2-7 kHz; breeds W/C Asia."
+ },
+ {
+  "n": "Laughing Kookaburra",
+  "s": "Dacelo novaeguineae",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Ref: laughing chorus, harsh harmonic cackles ~0.5-3 kHz; values unverified."
+ },
+ {
+  "n": "Australian Magpie",
+  "s": "Gymnorhina tibicen",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Ref: carolling, flutey plus harsh elements ~1-4 kHz, peak ~2 kHz."
+ },
+ {
+  "n": "Sulphur-crested Cockatoo",
+  "s": "Cacatua galerita",
+  "changed": [],
+  "c": "h",
+  "cf": "m",
+  "why": "Ref: harsh broadband screech; energy ~0.5-3.5 kHz."
+ },
+ {
+  "n": "Rainbow Lorikeet",
+  "s": "Trichoglossus moluccanus",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Shrill screeching chatter; split from T. haematodus, which GBIF may still use."
+ },
+ {
+  "n": "Superb Fairy-wren",
+  "s": "Malurus cyaneus",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Ref: high reeling trill song ~4-9 kHz."
+ },
+ {
+  "n": "Eastern Whipbird",
+  "s": "Psophodes olivaceus",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Ref: male long whistle plus rapid whip-crack sweep, female answers; Hz unverified."
+ },
+ {
+  "n": "Noisy Miner",
+  "s": "Manorina melanocephala",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Ref: harsh repeated chatter and alarm notes; values unverified."
+ },
+ {
+  "n": "Willie Wagtail",
+  "s": "Rhipidura leucophrys",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Ref: 'sweet-pretty-creature' tonal song; harsh chatter also common."
+ },
+ {
+  "n": "Galah",
+  "s": "Eolophus roseicapilla",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Ref: shrill 'chet' contact calls, higher than cockatoo screech (estimate)."
+ },
+ {
+  "n": "Pied Butcherbird",
+  "s": "Cracticus nigrogularis",
+  "changed": [
+   "fdom"
+  ],
+  "c": "h",
+  "cf": "l",
+  "why": "Flute-like song mostly ~1-3 kHz; fdom lowered (estimate)."
+ },
+ {
+  "n": "Tawny Frogmouth",
+  "s": "Podargus strigoides",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Ref: low pulsed 'oom-oom-oom' series; values unverified."
+ },
+ {
+  "n": "Oriental Magpie-Robin",
+  "s": "Copsychus saularis",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: varied loud whistled phrases with harsh notes and mimicry; existing range plausible, unchanged."
+ },
+ {
+  "n": "Red-whiskered Bulbul",
+  "s": "Pycnonotus jocosus",
+  "changed": [
+   "fdom",
+   "r",
+   "h"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: short liquid whistled phrases centred ~2.5 kHz; established Miami, Mauritius and Réunion populations."
+ },
+ {
+  "n": "Common Myna",
+  "s": "Acridotheres tristis",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: varied gurgles, croaks, whistles and mimicry; established introduced population in Florida."
+ },
+ {
+  "n": "Common Kingfisher",
+  "s": "Alcedo atthis",
+  "changed": [
+   "r",
+   "h",
+   "f"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: shrill whistled 'tzee' flight call; breeds NW Africa, ranges east to New Guinea and Solomons."
+ },
+ {
+  "n": "Japanese Bush Warbler",
+  "s": "Horornis diphone",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "r",
+   "h"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: long low whistle ~1–1.5 kHz then 'hokekyo' to ~4 kHz; established in Hawaii since 1929. [merge: au dropped — Hawaii/Pacific-island-only populations lie outside the app’s au realm (Australia, NZ, New Guinea)]"
+ },
+ {
+  "n": "Barn Owl",
+  "s": "Tyto alba",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Reference: drawn-out broadband screech, peak ~3 kHz; a single long note, so no note rate."
+ },
+ {
+  "n": "Indian Peafowl",
+  "s": "Pavo cristatus",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "r",
+   "f"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: loud harmonic 'may-awe' scream, fundamental ~1 kHz; long-established feral birds in NZ and Hawaii."
+ },
+ {
+  "n": "Asian Koel",
+  "s": "Eudynamys scolopaceus",
+  "changed": [
+   "r",
+   "h"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: male's rising 'ko-el' series; Australasian birds are Pacific Koel (E. orientalis)."
+ },
+ {
+  "n": "Black-naped Oriole",
+  "s": "Oriolus chinensis",
+  "changed": [
+   "fmax",
+   "fdom",
+   "h",
+   "f"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: fluty whistles ~1.2–3 kHz; kunang-kunang means firefly; breeds East Asia, not South Asia."
+ },
+ {
+  "n": "Spotted Dove",
+  "s": "Spilopelia chinensis",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: soft three-note coo ~0.5–0.6 kHz; HBW splits western S. suratensis."
+ },
+ {
+  "n": "White-bellied Sea Eagle",
+  "s": "Haliaeetus leucogaster",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: duetted goose-like honking 'kank-kank-kank'; IOC and Clements moved it to Icthyophaga."
+ },
+ {
+  "n": "Red Junglefowl",
+  "s": "Gallus gallus",
+  "changed": [
+   "r",
+   "f"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: crow, harmonic with harsh parts; Polynesian-introduced populations persist on Pacific islands. [merge: au dropped — Hawaii/Pacific-island-only populations lie outside the app’s au realm (Australia, NZ, New Guinea)]"
+ },
+ {
+  "n": "Indian Paradise Flycatcher",
+  "s": "Terpsiphone paradisi",
+  "changed": [
+   "n",
+   "h",
+   "f",
+   "w"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "2015 split: T. paradisi is the S/C Asian species; rolling whistled song, frequencies unverified."
+ },
+ {
+  "n": "White-rumped Shama",
+  "s": "Copsychus malabaricus",
+  "changed": [
+   "r",
+   "h"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Song: long, varied, rich fluty phrases with mimicry; established on Kauai and Oahu. [merge: au dropped — Hawaii/Pacific-island-only populations lie outside the app’s au realm (Australia, NZ, New Guinea)]"
+ },
+ {
+  "n": "Coppersmith Barbet",
+  "s": "Psilopogon haemacephalus",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Reference: monotonous tonal 'tuk' hoots ~1.2 kHz, about two per second."
+ },
+ {
+  "n": "African Fish Eagle",
+  "s": "Haliaeetus vocifer",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: ringing yelping 'weee-ah, kyow-kow-kow' with overtones; IOC moved it to Icthyophaga."
+ },
+ {
+  "n": "Hadada Ibis",
+  "s": "Bostrychia hagedash",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: loud nasal 'haa-haa-ha-de-dah' flight calls; frequencies not verified."
+ },
+ {
+  "n": "Cape Turtle Dove",
+  "s": "Streptopelia capicola",
+  "changed": [
+   "f",
+   "w"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: 'kuk-COORR-uk' coo; Afrikaans name 'Werk-harder' unsupported; Wikipedia title is Ring-necked dove."
+ },
+ {
+  "n": "Fork-tailed Drongo",
+  "s": "Dicrurus adsimilis",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: varied metallic, harsh and whistled notes with extensive mimicry."
+ },
+ {
+  "n": "Cape Robin-Chat",
+  "s": "Cossypha caffra",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Song: varied melodious whistled phrases with mimicry; frequencies not verified."
+ },
+ {
+  "n": "African Grey Parrot",
+  "s": "Psittacus erithacus",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: wild flock whistles and harsh screeches; mixed texture, values not verified."
+ },
+ {
+  "n": "Village Weaver",
+  "s": "Ploceus cucullatus",
+  "changed": [
+   "r",
+   "h"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: long mix of buzzy swizzles, chatters and whistles; invasive established population on Hispaniola."
+ },
+ {
+  "n": "Pied Crow",
+  "s": "Corvus albus",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: harsh croaking 'kraak' caw."
+ },
+ {
+  "n": "Lilac-breasted Roller",
+  "s": "Coracias caudatus",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: harsh rasping 'rak-rak' calls and cackles in display flight."
+ },
+ {
+  "n": "Red-billed Quelea",
+  "s": "Quelea quelea",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Song: brief jumbled chatter ending in a wheeze; values not verified."
+ },
+ {
+  "n": "Hamerkop",
+  "s": "Scopus umbretta",
+  "changed": [
+   "r"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: nasal piping 'yip-purr' and 'kek' series; also resident in southwestern Arabia."
+ },
+ {
+  "n": "Southern Yellow-billed Hornbill",
+  "s": "Tockus leucomelas",
+  "changed": [
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: hollow accelerating 'wok-wok-wok' clucking display, energy near 1 kHz."
+ },
+ {
+  "n": "Rufous-bellied Thrush",
+  "s": "Turdus rufiventris",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: Turdus-style fluty caroling phrases."
+ },
+ {
+  "n": "Great Kiskadee",
+  "s": "Pitangus sulphuratus",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: loud 'kis-ka-dee' call, pitched with strong overtones."
+ },
+ {
+  "n": "Toco Toucan",
+  "s": "Ramphastos toco",
+  "changed": [
+   "fmin",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: deep guttural croaking 'grrek', repeated about once per second."
+ },
+ {
+  "n": "Rufous Hummingbird",
+  "s": "Selasphorus rufus",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "No song: chip/chatter calls are most recorded; winters in Mexico, not South America."
+ },
+ {
+  "n": "Tropical Kingbird",
+  "s": "Tyrannus melancholicus",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: high twittering 'pip-pip-pip-peeeerr'; frequencies not verified."
+ },
+ {
+  "n": "Rufous-collared Sparrow",
+  "s": "Zonotrichia capensis",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: slurred whistles then dialect-specific trill; resident from southern Mexico and Hispaniola southward."
+ },
+ {
+  "n": "Screaming Piha",
+  "s": "Lipaugus vociferans",
+  "changed": [],
+  "c": "h",
+  "cf": "l",
+  "why": "Reference: explosive whistled 'pi-pi-yo' call; frequency values not verified."
+ },
+ {
+  "n": "Amazonian Motmot",
+  "s": "Momotus momota",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "f"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: low hollow double hoot 'hoo-doo' ~0.5 kHz; old fact garbled the tail-wag signal."
+ },
+ {
+  "n": "Andean Cock-of-the-rock",
+  "s": "Rupicola peruvianus",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: harsh squealing and grunting lek calls."
+ },
+ {
+  "n": "House Sparrow",
+  "s": "Passer domesticus",
+  "changed": [
+   "f"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: repeated harmonic 'chirrup' chirps; Brooklyn releases were dozens of birds, not eight."
+ },
+ {
+  "n": "Rock Pigeon",
+  "s": "Columba livia",
+  "changed": [
+   "f"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: low bow-coo; beak-magnetite compass disproved (Treiber 2012); Monet/Picasso from Watanabe 1995."
+ },
+ {
+  "n": "Common Raven",
+  "s": "Corvus corax",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: deep resonant croak; breeds across North Africa."
+ },
+ {
+  "n": "Peregrine Falcon",
+  "s": "Falco peregrinus",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: harsh broadband 'kak-kak-kak' cackle."
+ },
+ {
+  "n": "Osprey",
+  "s": "Pandion haliaetus",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: series of whistled 'kyew' notes; winters widely in South America; IOC splits Eastern Osprey."
+ },
+ {
+  "n": "Arctic Tern",
+  "s": "Sterna paradisaea",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: harsh 'kee-arr' call; breeds Arctic Asia, regular passage off Africa and South America."
+ },
+ {
+  "n": "White Stork",
+  "s": "Ciconia ciconia",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: bill-clattering, rapid broadband clacks; adults largely voiceless."
+ },
+ {
+  "n": "Black Kite",
+  "s": "Milvus migrans",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "f"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: tremulous whinnying whistle 'pee-errr'; 'roosts of millions' unsupported."
+ },
+ {
+  "n": "Little Owl",
+  "s": "Athene noctua",
+  "changed": [
+   "fmax",
+   "r",
+   "h"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: male's rising mewing hoot ~1 kHz, repeated every few seconds; established in New Zealand."
+ },
+ {
+  "n": "Tufted Titmouse",
+  "s": "Baeolophus bicolor",
+  "changed": [],
+  "c": "h",
+  "cf": "m",
+  "why": "Song: clear whistled 'peter-peter-peter'."
+ },
+ {
+  "n": "White-breasted Nuthatch",
+  "s": "Sitta carolinensis",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: rapid nasal 'wha-wha-wha' series with harmonics."
+ },
+ {
+  "n": "Red-bellied Woodpecker",
+  "s": "Melanerpes carolinus",
+  "changed": [],
+  "c": "l",
+  "cf": "m",
+  "why": "Reference: rolling burry 'kwirr' call, its most-heard vocalization; repetition rate variable."
+ },
+ {
+  "n": "Northern Flicker",
+  "s": "Colaptes auratus",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: long 'wick-wick-wick' call series at about 7 notes per second."
+ },
+ {
+  "n": "Pileated Woodpecker",
+  "s": "Dryocopus pileatus",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: loud wild 'wuk-wuk-wuk' call series; HBW/BirdLife place it in Hylatomus."
+ },
+ {
+  "n": "Eastern Phoebe",
+  "s": "Sayornis phoebe",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: burry 'fee-bee' with energy mostly 3–6 kHz."
+ },
+ {
+  "n": "Eastern Wood-Pewee",
+  "s": "Contopus virens",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Song: slow slurred whistled 'pee-a-wee'; winters in northern South America."
+ },
+ {
+  "n": "Chipping Sparrow",
+  "s": "Spizella passerina",
+  "changed": [],
+  "c": "h",
+  "cf": "h",
+  "why": "Song: dry mechanical trill, energy ~4–7 kHz."
+ },
+ {
+  "n": "White-crowned Sparrow",
+  "s": "Zonotrichia leucophrys",
+  "changed": [
+   "f"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: whistled intro, buzzy notes and trill; 'two weeks awake' overstated (Rattenborg 2004)."
+ },
+ {
+  "n": "Tree Swallow",
+  "s": "Tachycineta bicolor",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: liquid twittering chirps and gurgles."
+ },
+ {
+  "n": "Purple Martin",
+  "s": "Progne subis",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "l",
+  "why": "Song: throaty gurgling croaks and chortles; winters in Amazonian South America."
+ },
+ {
+  "n": "Cliff Swallow",
+  "s": "Petrochelidon pyrrhonota",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Song: squeaky, creaking, grating twitters; winters in southern South America."
+ },
+ {
+  "n": "Bohemian Waxwing",
+  "s": "Bombycilla garrulus",
+  "changed": [
+   "n",
+   "fmin",
+   "fmax",
+   "fdom",
+   "f"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Entry is Bohemian (Cedar listed separately); its 'sirrr' trill is lower, buzzier than Cedar's."
+ },
+ {
+  "n": "Brown-headed Cowbird",
+  "s": "Molothrus ater",
+  "changed": [],
+  "c": "h",
+  "cf": "l",
+  "why": "Song: low bubbling gurgles ending in very high whistle; spectral peak uncertain."
+ },
+ {
+  "n": "Common Grackle",
+  "s": "Quiscalus quiscula",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: squeaky grating 'readle-eak' burst."
+ },
+ {
+  "n": "Mallard",
+  "s": "Anas platyrhynchos",
+  "changed": [
+   "r",
+   "h"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Reference: female's descending quack series; breeds NW Africa, established in NZ, Australia, South Africa."
+ },
+ {
+  "n": "Canada Goose",
+  "s": "Branta canadensis",
+  "changed": [
+   "r",
+   "h"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Reference: two-syllable harmonic honk; long established in New Zealand."
+ },
+ {
+  "n": "Wood Duck",
+  "s": "Aix sponsa",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: female's squealing 'oo-eek' flush call."
+ },
+ {
+  "n": "Great Egret",
+  "s": "Ardea alba",
+  "changed": [],
+  "c": "h",
+  "cf": "m",
+  "why": "Reference: low harsh croak 'kraak'."
+ },
+ {
+  "n": "Belted Kingfisher",
+  "s": "Megaceryle alcyon",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: loud dry rattle; winters to northern South America."
+ },
+ {
+  "n": "American Kestrel",
+  "s": "Falco sparverius",
+  "changed": [
+   "f"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: shrill 'klee-klee-klee'; vole-urine UV claim comes from Eurasian Kestrel and is contested."
+ },
+ {
+  "n": "Cooper's Hawk",
+  "s": "Astur cooperii",
+  "changed": [
+   "s"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: harsh 'cak-cak-cak'; 2024 Accipiter split moved cooperii to Astur."
+ },
+ {
+  "n": "Turkey Vulture",
+  "s": "Cathartes aura",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "f"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Reference: broadband hiss; also hunts by sight, so 'by smell alone' overstated."
+ },
+ {
+  "n": "Wild Turkey",
+  "s": "Meleagris gallopavo",
+  "changed": [
+   "r",
+   "h"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: male gobble, a rapid guttural rattle; well established in New Zealand."
+ },
+ {
+  "n": "Mourning Warbler",
+  "s": "Geothlypis philadelphia",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: rich 'churry-churry-chorry-chorry'; winters to Colombia, Venezuela, Ecuador."
+ },
+ {
+  "n": "Common Yellowthroat",
+  "s": "Geothlypis trichas",
+  "changed": [
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: whistled 'witchety' triplets, energy mainly 3–6 kHz."
+ },
+ {
+  "n": "American Redstart",
+  "s": "Setophaga ruticilla",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: high thin 'tsee-tsee-tsweeo' notes; winters in northern South America."
+ },
+ {
+  "n": "Scarlet Tanager",
+  "s": "Piranga olivacea",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: burry, hoarse robin-like phrases; winters in northwestern South America."
+ },
+ {
+  "n": "Rose-breasted Grosbeak",
+  "s": "Pheucticus ludovicianus",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: rich, fast robin-like whistled warble; winters to northern South America."
+ },
+ {
+  "n": "Coal Tit",
+  "s": "Periparus ater",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: repeated 'teechu' whistles ~4-8 kHz, peak ~6 kHz; Atlas populations breed in NW Africa."
+ },
+ {
+  "n": "Marsh Tit",
+  "s": "Poecile palustris",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Song: repeated 'schip/tju' chevron notes; existing values plausible but unverified."
+ },
+ {
+  "n": "Nuthatch",
+  "s": "Sitta europaea",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: loud 'pee-pee' whistles ~2-4 kHz, slow or fast-trilled; resident in Moroccan Atlas/Rif."
+ },
+ {
+  "n": "Common Treecreeper",
+  "s": "Certhia familiaris",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: thin descending accelerating series ~5-9 kHz ending in flourish; values fit."
+ },
+ {
+  "n": "Common Redstart",
+  "s": "Phoenicurus phoenicurus",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: whistled intro, 'tru-tru' notes, then variable scratchy/mimetic flourish; values reasonable."
+ },
+ {
+  "n": "European Stonechat",
+  "s": "Saxicola rubicola",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Song: short squeaky scratchy warbled phrases; breeds Turkey/Caucasus, winters Middle East."
+ },
+ {
+  "n": "Common Whitethroat",
+  "s": "Curruca communis",
+  "changed": [
+   "s"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Curruca genus (IOC/Clements). Song: brief fast scratchy warble; frequencies unverified."
+ },
+ {
+  "n": "Willow Warbler",
+  "s": "Phylloscopus trochilus",
+  "changed": [],
+  "c": "h",
+  "cf": "m",
+  "why": "Song: soft descending cadence of whistled notes, ~2.5-3 s; values fit."
+ },
+ {
+  "n": "Sedge Warbler",
+  "s": "Acrocephalus schoenobaenus",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "r"
+  ],
+  "c": "h",
+  "cf": "l",
+  "why": "Song: long varied chatter with churrs, trills, mimicry; lower churrs; breeds east to C Siberia."
+ },
+ {
+  "n": "Eurasian Reed Warbler",
+  "s": "Acrocephalus scirpaceus",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "m",
+  "why": "Song: rhythmic chattering, syllables repeated 2-4 times; breeds W/C Asia and Middle East."
+ },
+ {
+  "n": "Common Firecrest",
+  "s": "Regulus ignicapilla",
+  "changed": [
+   "fmax",
+   "fdom",
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: accelerating 'zi-zi-zi' series, lower than Goldcrest, peak ~7 kHz; breeds NW Africa."
+ },
+ {
+  "n": "Willow Tit",
+  "s": "Poecile montanus",
+  "changed": [
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: slow plaintive 'piu-piu-piu' pure whistles ~3-4 kHz, unlike Marsh Tit."
+ },
+ {
+  "n": "Bullfinch",
+  "s": "Pyrrhula pyrrhula",
+  "changed": [
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: soft piping 'peu' call (song quiet, rarely heard); narrow whistle ~2 kHz."
+ },
+ {
+  "n": "Hawfinch",
+  "s": "Coccothraustes coccothraustes",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "r"
+  ],
+  "c": "l",
+  "cf": "m",
+  "why": "Reference: sharp 'tzik'/'tsii' calls (song rarely heard), measured ~6-9 kHz; NW Africa race buvryi."
+ },
+ {
+  "n": "Common Redpoll",
+  "s": "Acanthis flammea",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Song: rattling 'chet-chet' flight trills plus buzzy notes; AOS/Clements 2024 lumped redpolls."
+ },
+ {
+  "n": "Eurasian Siskin",
+  "s": "Spinus spinus",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Song: fast twitter ending in loud wheeze ~4 kHz; stop copying Goldfinch triple."
+ },
+ {
+  "n": "Grey Heron",
+  "s": "Ardea cinerea",
+  "changed": [],
+  "c": "h",
+  "cf": "m",
+  "why": "Reference: harsh 'fraank' flight call, low broadband; values fit."
+ },
+ {
+  "n": "Common Moorhen",
+  "s": "Gallinula chloropus",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "r",
+   "h"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "American birds split as Common Gallinule. Reference: explosive 'kurruk' croak, mostly 1-3 kHz."
+ },
+ {
+  "n": "Common Gallinule",
+  "s": "Gallinula galeata",
+  "changed": [
+   "added"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Split 2011 on vocal differences. Reference: decelerating series of nasal clucks."
+ },
+ {
+  "n": "Eurasian Coot",
+  "s": "Fulica atra",
+  "changed": [
+   "r"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: loud short 'kowk'/'pitt' calls given singly; resident across North Africa."
+ },
+ {
+  "n": "Common Kestrel",
+  "s": "Falco tinnunculus",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: shrill rapid 'kee-kee-kee' series; values fit."
+ },
+ {
+  "n": "Eurasian Sparrowhawk",
+  "s": "Accipiter nisus",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: 'kek-kek-kek' chatter near nest; mostly silent, little data."
+ },
+ {
+  "n": "Common Buzzard",
+  "s": "Buteo buteo",
+  "changed": [
+   "r"
+  ],
+  "c": "l",
+  "cf": "m",
+  "why": "Reference: descending mewing 'peee-yow'; Steppe Buzzards winter in E and S Africa."
+ },
+ {
+  "n": "European Green Woodpecker",
+  "s": "Picus viridis",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: laughing 'yaffle' series; ranges into Turkey/Caucasus/Iran; Iberian birds split by IOC."
+ },
+ {
+  "n": "Great Spotted Woodpecker",
+  "s": "Dendrocopos major",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "l",
+  "why": "Reference: short territorial drum; spectrum substrate-dependent. Resident in NW Africa."
+ },
+ {
+  "n": "European Bee-eater",
+  "s": "Merops apiaster",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: liquid rolled 'prruip' flight call; rechecked, no firm basis to change fdom."
+ },
+ {
+  "n": "Common Redwing",
+  "s": "Turdus iliacus",
+  "changed": [
+   "fmin",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Song: descending fluty phrase then twittering chatter; fluty part dominates ~3 kHz."
+ },
+ {
+  "n": "Fieldfare",
+  "s": "Turdus pilaris",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: harsh 'chack-chack' call (song rarely heard away from breeding grounds)."
+ },
+ {
+  "n": "Japanese Tit",
+  "s": "Parus minor",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: Great Tit-like 'tsupi-tsupi' two-note phrases; similar pitch to Great Tit."
+ },
+ {
+  "n": "Light-vented Bulbul",
+  "s": "Pycnonotus sinensis",
+  "changed": [
+   "fmax",
+   "fdom"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "Song: short liquid chattering phrases; bulbul songs centre lower than template."
+ },
+ {
+  "n": "Eurasian Tree Sparrow",
+  "s": "Passer montanus",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: repeated metallic chirps; established introduced populations in SE Australia and St Louis area."
+ },
+ {
+  "n": "Black Drongo",
+  "s": "Dicrurus macrocercus",
+  "changed": [
+   "r"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: varied harsh and whistled calls with mimicry; introduced, established on Guam and Rota. [merge: au dropped — Hawaii/Pacific-island-only populations lie outside the app’s au realm (Australia, NZ, New Guinea)]"
+ },
+ {
+  "n": "Rose-ringed Parakeet",
+  "s": "Psittacula krameri",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "l",
+  "why": "Reference: shrill 'kee-ak' screech; large established feral population on Kauai, Hawaii. [merge: au dropped — Hawaii/Pacific-island-only populations lie outside the app’s au realm (Australia, NZ, New Guinea)]"
+ },
+ {
+  "n": "Red-vented Bulbul",
+  "s": "Pycnonotus cafer",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom",
+   "r"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: bubbling whistled 'be-care-ful'; mid-low pitch. Invasive on Hawaii, Fiji, Samoa, Tonga. [merge: au dropped — Hawaii/Pacific-island-only populations lie outside the app’s au realm (Australia, NZ, New Guinea)]"
+ },
+ {
+  "n": "Indian Robin",
+  "s": "Copsychus fulicatus",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Song: short whistled warbling phrases; formerly genus Saxicoloides; values unverified."
+ },
+ {
+  "n": "Purple Sunbird",
+  "s": "Cinnyris asiaticus",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Song: rapid high twittering trill and 'chwit' notes; values unverified."
+ },
+ {
+  "n": "Jungle Babbler",
+  "s": "Argya striata",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: harsh chattering group calls; moved from Turdoides to Argya."
+ },
+ {
+  "n": "Vinous-throated Parrotbill",
+  "s": "Sinosuthora webbiana",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Song: high thin repeated 'tiu' notes amid flock twitter; formerly Paradoxornis."
+ },
+ {
+  "n": "Azure-winged Magpie",
+  "s": "Cyanopica cyanus",
+  "changed": [
+   "f"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: rasping rising 'zhreee' call. Iberian birds are a separate species (C. cooki)."
+ },
+ {
+  "n": "Oriental Turtle Dove",
+  "s": "Streptopelia orientalis",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: hoarse four-note coo, fundamental ~500 Hz; values fit."
+ },
+ {
+  "n": "Long-tailed Shrike",
+  "s": "Lanius schach",
+  "changed": [
+   "r"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "Song: rambling warble with mimicry plus harsh notes; resident race stresemanni in New Guinea."
+ },
+ {
+  "n": "Superb Starling",
+  "s": "Lamprotornis superbus",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Song: long rambling mix of chatters, trills and whistles; values unverified."
+ },
+ {
+  "n": "Southern Masked Weaver",
+  "s": "Ploceus velatus",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Song: sizzling buzzy chatter ending in swizzle; values unverified."
+ },
+ {
+  "n": "Laughing Dove",
+  "s": "Spilopelia senegalensis",
+  "changed": [
+   "r"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: soft bubbling 5-7 note coo; long-established introduced population around Perth, WA."
+ },
+ {
+  "n": "Speckled Mousebird",
+  "s": "Colius striatus",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: harsh 'chirr' and 'tsik' flock calls; values unverified."
+ },
+ {
+  "n": "Cape Sparrow",
+  "s": "Passer melanurus",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Song: chirruping 'chissip-chirrup' series; values unverified."
+ },
+ {
+  "n": "African Paradise Flycatcher",
+  "s": "Terpsiphone viridis",
+  "changed": [
+   "r"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "Song: ringing whistled 'wee-te-tee' phrases; race harterti resident in SW Arabia."
+ },
+ {
+  "n": "Grey Go-away-bird",
+  "s": "Crinifer concolor",
+  "changed": [
+   "s"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Genus Crinifer (IOC/Clements). Reference: drawn-out nasal 'g-waaay', harmonic, low."
+ },
+ {
+  "n": "Yellow-billed Kite",
+  "s": "Milvus aegyptius",
+  "changed": [
+   "r"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: tremulous whinnying whistle; Clements lumps in Black Kite; race arabicus in SW Arabia."
+ },
+ {
+  "n": "Helmeted Guineafowl",
+  "s": "Numida meleagris",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: harsh clattering 'kek-kek-kaaa' cackle; values unverified."
+ },
+ {
+  "n": "Crowned Lapwing",
+  "s": "Vanellus coronatus",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: strident ringing 'kree-kreeip' calls; values unverified."
+ },
+ {
+  "n": "Australian Raven",
+  "s": "Corvus coronoides",
+  "changed": [],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: wailing 'aah-aah-aaaah' with dying fall; corvid-typical values fit."
+ },
+ {
+  "n": "Magpie-lark",
+  "s": "Grallina cyanoleuca",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: antiphonal 'pee-wee' duet of loud ringing mid-pitched whistles."
+ },
+ {
+  "n": "Grey Butcherbird",
+  "s": "Cracticus torquatus",
+  "changed": [
+   "fmin",
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Song: rich low piping whistles; Cracticus song notes mostly ~0.7-2.5 kHz."
+ },
+ {
+  "n": "Crimson Rosella",
+  "s": "Platycercus elegans",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: bell-like piping contact whistles; values unverified."
+ },
+ {
+  "n": "Eastern Rosella",
+  "s": "Platycercus eximius",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: rapid 'pi-pi-pi' piping and rising whistles; values unverified."
+ },
+ {
+  "n": "Australian King Parrot",
+  "s": "Alisterus scapularis",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: harsh 'carrak' flight call (males also pipe); values unverified."
+ },
+ {
+  "n": "Superb Lyrebird",
+  "s": "Menura novaehollandiae",
+  "changed": [],
+  "c": "h",
+  "cf": "l",
+  "why": "Song: extended mimicry sequences plus own territorial phrases; broadband."
+ },
+ {
+  "n": "New Holland Honeyeater",
+  "s": "Phylidonyris novaehollandiae",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: sharp metallic 'chik' notes and chatter; values unverified."
+ },
+ {
+  "n": "Little Wattlebird",
+  "s": "Anthochaera chrysoptera",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: raucous coughing 'chock-chock' calls; values unverified."
+ },
+ {
+  "n": "Tui",
+  "s": "Prosthemadera novaeseelandiae",
+  "changed": [
+   "w"
+  ],
+  "c": "h",
+  "cf": "l",
+  "why": "Song: bell notes mixed with clicks, wheezes, gurgles. Wikipedia title is Tūī; 'Tui' is ambiguous."
+ },
+ {
+  "n": "New Zealand Bellbird",
+  "s": "Anthornis melanura",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Song: liquid chiming bell-like phrases; values unverified."
+ },
+ {
+  "n": "Southern Lapwing",
+  "s": "Vanellus chilensis",
+  "changed": [
+   "r"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "Reference: loud metallic 'keh-keh-keh'; resident in Panama/Costa Rica, spreading north."
+ },
+ {
+  "n": "Eared Dove",
+  "s": "Zenaida auriculata",
+  "changed": [
+   "r",
+   "fmax"
+  ],
+  "c": "m",
+  "cf": "m",
+  "why": "Reference: soft low Mourning Dove-like coo, weak harmonics; resident in Lesser Antilles."
+ },
+ {
+  "n": "Bananaquit",
+  "s": "Coereba flaveola",
+  "changed": [
+   "fmin",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Song: thin, sibilant buzzy trill, little energy below ~4 kHz."
+ },
+ {
+  "n": "Saffron Finch",
+  "s": "Sicalis flaveola",
+  "changed": [
+   "r"
+  ],
+  "c": "l",
+  "cf": "l",
+  "why": "Song: chip notes and short phrases; introduced, established in Jamaica, Puerto Rico, Panama, Hawaii. [merge: au dropped — Hawaii/Pacific-island-only populations lie outside the app’s au realm (Australia, NZ, New Guinea)]"
+ },
+ {
+  "n": "Rufous Hornero",
+  "s": "Furnarius rufus",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Song: loud accelerating shrill duet series; values unverified."
+ },
+ {
+  "n": "Blue-and-yellow Macaw",
+  "s": "Ara ararauna",
+  "changed": [
+   "r"
+  ],
+  "c": "h",
+  "cf": "l",
+  "why": "Reference: raucous 'raaa-ak' screech; native range reaches eastern Panama."
+ },
+ {
+  "n": "Bare-throated Bellbird",
+  "s": "Procnias nudicollis",
+  "changed": [],
+  "c": "l",
+  "cf": "l",
+  "why": "Song: explosive metallic 'bock' and 'tink' series, impulsive/percussive; values unverified."
+ },
+ {
+  "n": "Social Flycatcher",
+  "s": "Myiozetetes similis",
+  "changed": [],
+  "c": "m",
+  "cf": "l",
+  "why": "Reference: harsh 'chee-chee-chee' chatter; values unverified."
+ },
+ {
+  "n": "Chalk-browed Mockingbird",
+  "s": "Mimus saturninus",
+  "changed": [],
+  "c": "h",
+  "cf": "l",
+  "why": "Song: loud varied phrases with mimicry, like Northern Mockingbird."
+ },
+ {
+  "n": "Green-winged Saltator",
+  "s": "Saltator similis",
+  "changed": [
+   "fmax",
+   "fdom"
+  ],
+  "c": "m",
+  "cf": "l",
+  "why": "Song: rich loud whistled phrase; Saltator songs centre ~2.5-3.5 kHz."
+ }
+]
