@@ -1285,7 +1285,7 @@ function rebuildChain(){
 // ── Record toggle ─────────────────────────────────────────────────────────────
 async function toggleRec(){
   if(S.isRec){stopRec();return;}
-  if(S._starting)return; // guard against double-tap during async init
+  if(S._starting||S._stopping)return; // guard against double-tap during async init / teardown
   S._starting=true;
   try{await initAudio();}catch(e){toast("Mic error: "+e.message);S._starting=false;return;}
   const id=++S.recId;
@@ -1297,7 +1297,7 @@ async function toggleRec(){
     if(S.isRec&&S.nSamples>=MAX_REC_SEC*S.fs)stopRec();
   };
   try{S.tap=await captureTap(S.audioCtx,S.srcNode,onChunk);S.tapKind=S.tap.kind;}
-  catch(e){toast("Audio capture error: "+e.message);S._starting=false;return;}
+  catch(e){toast("Audio capture error: "+e.message);S.stream?.getTracks().forEach(t=>t.stop());S._starting=false;return;}
   S._starting=false;
   // Health check: a worklet that delivers nothing (seen on some WebViews) is swapped for the
   // ScriptProcessor path before the user loses the recording.
@@ -1318,7 +1318,7 @@ async function toggleRec(){
 }
 async function stopRec(){
   if(!S.isRec)return;
-  S.isRec=false;
+  S.isRec=false;S._stopping=true;
   clearInterval(S.timerInt);timerEl.style.display="none";
   recBtn.classList.remove("rec");recIcon.textContent="🎙️";
   recBtn.setAttribute("aria-label","Start recording");recBtn.setAttribute("aria-pressed","false");
@@ -1334,6 +1334,7 @@ async function stopRec(){
   if(S.nSamples>S.fs&&Math.abs(S.nSamples/expect-1)>0.02)
     console.warn(`Capture clock drift: ${S.nSamples} samples in ${elapsed.toFixed(2)} s at ${S.fs} Hz`);
   try{await S.audioCtx?.close();}catch(e){}S.audioCtx=null;S.analyser=null;S.displayIn=null;S.srcNode=null;
+  S._stopping=false;
   onStop();
 }
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&S.isRec)stopRec();});
@@ -1345,7 +1346,7 @@ function fmt(s){return`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60
 // each choice and the tolerances verified by tests/dsp-precision.mjs.
 const DSP={fLo:150,fHi:12000,trimSec:0.2,hpHz:100,winSec:0.0213,
   q:0.2,           // noise PSD = per-bin 20th percentile of 3-frame-smoothed power…
-  qBias:0.417,        // …divided by this calibrated quantile/mean ratio (set below) → unbiased mean noise power
+  qBias:0.417,     // …divided by its quantile/mean ratio on white noise (0.411–0.420 at 16–48 kHz) → mean noise power
   onDb:9,offDb:5,  // activity hysteresis on 3×3-smoothed per-cell SNR (0.0 % false activity on white noise)
   cellDb:6,        // a time–frequency cell counts as "signal" for measurements above this SNR
   minNoteSec:0.015,maxGapSec:0.020,peakFloorDb:-20,maxPeaks:5,concBins:3,
