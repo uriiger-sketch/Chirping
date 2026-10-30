@@ -1,19 +1,19 @@
 // BIRD_DB lint — structural and physical invariants of the species catalogue, plus a degeneracy
 // report (how many species a classifier could not tell apart even with perfect measurements).
-// Node only, no browser:  node tests/db-lint.mjs
+// Node only, no browser:  node tests/db-lint.mjs [path/to/index.html]
 // Rules behind each check: .claude/skills/bird-acoustic-data/SKILL.md
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-const html = readFileSync(fileURLToPath(new URL('../index.html', import.meta.url)), 'utf8');
+const html = readFileSync(process.argv[2] || fileURLToPath(new URL('../index.html', import.meta.url)), 'utf8'); // optional path: lint a fitted copy
 const m = html.match(/const BIRD_DB = (\[[\s\S]*?\n\]);/);
 if (!m) { console.error('BIRD_DB not found in index.html'); process.exit(1); }
 const DB = new Function(`return ${m[1]}`)();
 
 const REGIONS = new Set(['na', 'sa', 'eu', 'as', 'af', 'au']);
 const TYPES = new Set(['w', 'h', 'n', 't', 'c', 'p']);
-const CONF = new Set(['h', 'm', 'l']);
+const CONF = new Set(['h', 'm', 'l', 'd']); // d = measured from real recordings (tools/fit-model.mjs)
 const BINOMIAL = /^[A-Z][a-z]+ [a-z][a-z-]+$/;
 const errors = [];
 const err = (b, msg) => errors.push(`${b.n || '?'} (${b.s || '?'}): ${msg}`);
@@ -33,7 +33,13 @@ for (const b of DB) {
   if (!TYPES.has(b.t)) err(b, `bad vocal type ${JSON.stringify(b.t)}`);
   if (b.nr !== null && !(Array.isArray(b.nr) && b.nr.length === 2 && b.nr[0] > 0 && b.nr[0] <= b.nr[1] && b.nr[1] <= 100))
     err(b, `nr must be null or [lo,hi] notes/s with 0<lo≤hi≤100, got ${JSON.stringify(b.nr)}`);
-  if (!CONF.has(b.c) || !CONF.has(b.cf)) err(b, `confidence codes c/cf must be h|m|l, got ${b.c}/${b.cf}`);
+  if (!CONF.has(b.c) || !CONF.has(b.cf)) err(b, `confidence codes c/cf must be h|m|l|d, got ${b.c}/${b.cf}`);
+  if (b.x !== undefined) {
+    const x = b.x, num = v => Number.isFinite(v);
+    if (!(Number.isInteger(x.n) && x.n >= 1 && num(x.sp) && x.sp > 0 && x.sp < 1 && Array.isArray(x.tx) && x.tx.length === 3 && x.tx.every(num) && num(x.ts) && x.ts > 0 && num(x.rd) && x.rd > 0 && x.rd < 1))
+      err(b, `x (measured parameters) malformed: ${JSON.stringify(x)}`);
+    if (b.cf !== 'd' || b.c !== 'd') err(b, 'an entry with measured parameters x must carry c/cf = "d"');
+  } else if (b.c === 'd' || b.cf === 'd') err(b, 'confidence "d" (measured) requires the x field');
   if (b.sy !== undefined && !(Array.isArray(b.sy) && b.sy.every(s => /^[A-Z][a-z]+ [a-z-]+( [a-z-]+)?$/.test(s) && s !== b.s)))
     err(b, `sy must list other binomials/trinomials: ${JSON.stringify(b.sy)}`);
 }
@@ -52,7 +58,7 @@ function ceiling(pool, rel) {
 }
 const pct = x => (x * 100).toFixed(1) + '%';
 const sig = b => `${b.fmin}/${b.fmax}/${b.fdom}`;
-const conf = k => ['h', 'm', 'l'].map(c => `${c}:${DB.filter(b => b[k] === c).length}`).join(' ');
+const conf = k => ['h', 'm', 'l', 'd'].map(c => `${c}:${DB.filter(b => b[k] === c).length}`).join(' ');
 
 console.log(`\n=== BIRD_DB lint (${DB.length} species) ===`);
 console.log(`identical (fmin,fmax,fdom) signatures: ${DB.length - new Set(DB.map(sig)).size} duplicates; fdom on a 100 Hz grid: ${DB.filter(b => b.fdom % 100 === 0).length}`);

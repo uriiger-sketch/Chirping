@@ -38,11 +38,13 @@ export function chromiumPath() {
   return existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined;
 }
 
-// Block everything off-origin except what `mocks` answers ({ hostSubstring: (url) => json }).
-export async function routeNetwork(page, origin, mocks = {}) {
+// Block everything off-origin except what `mocks` answers ({ hostSubstring: (url) => json }) and
+// the hosts listed in `allow` (real network, e.g. the live occurrence-prior check).
+export async function routeNetwork(page, origin, mocks = {}, allow = []) {
   await page.route('**/*', route => {
     const u = route.request().url();
     if (u.startsWith(origin) || u.startsWith('data:') || u.startsWith('blob:')) return route.continue();
+    if (allow.some(h => new URL(u).hostname === h)) return route.continue();
     for (const [host, fn] of Object.entries(mocks)) if (u.includes(host)) {
       const body = fn(u); return body === null ? route.abort() : route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     }
@@ -51,13 +53,13 @@ export async function routeNetwork(page, origin, mocks = {}) {
 }
 
 // Open the app with the synthesiser (and optionally the legacy v3.2 classifier) injected.
-export async function openApp(browser, { legacy = false, mocks = {}, contextOptions = {} } = {}) {
+export async function openApp(browser, { legacy = false, mocks = {}, allow = [], contextOptions = {} } = {}) {
   const srv = await startServer();
   const context = await browser.newContext(contextOptions);
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
-  await routeNetwork(page, srv.url, mocks);
+  await routeNetwork(page, srv.url, mocks, allow);
   await page.goto(srv.url + 'index.html', { waitUntil: 'load' });
   await page.addScriptTag({ url: srv.url + 'tests/lib/synth.js' });
   if (legacy) await page.addScriptTag({ url: srv.url + 'tests/lib/legacy.js' });

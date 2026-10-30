@@ -18,6 +18,7 @@
 // the same clips, expected calibration error (ECE) and Brier score of the v4 top-1 probability,
 // an accuracy-vs-noise monotonicity check (±2 SE), and a 20 % species leave-out open-set test.
 import { loadPlaywright, chromiumPath, openApp } from './lib/harness.mjs';
+import { metric, mcnemar as mcnemarAB, calibration, reliability, pct as pc } from './lib/stats.mjs';
 
 const TRIALS = +(process.env.BENCH_TRIALS || 2), SEED = +(process.env.BENCH_SEED || 5000);
 const CONDS = { clean: { snr: 25, traffic: 0, wind: 0 }, moderate: { snr: 12, traffic: 0.3, wind: 0 },
@@ -68,22 +69,8 @@ const openSet = await page.evaluate(({ moderate }) => {
 }, { moderate: cases.filter(c => c.cond === 'moderate') });
 await app.close(); await browser.close();
 
-// ── statistics ───────────────────────────────────────────────────────────────
-const bySpecies = (rows, f) => { const m = new Map(); for (const r of rows) { if (!m.has(r.si)) m.set(r.si, []); m.get(r.si).push(f(r)); } return [...m.values()]; };
-function metric(rows, f) { // mean with a 95 % species-bootstrap CI
-  const groups = bySpecies(rows, f), flat = groups.flat(), mean = flat.reduce((s, v) => s + v, 0) / flat.length;
-  let seed = 99; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296, boots = [];
-  for (let b = 0; b < 2000; b++) { let s = 0, n = 0; for (let i = 0; i < groups.length; i++) { const g = groups[Math.floor(rnd() * groups.length)]; for (const v of g) { s += v; n++; } } boots.push(s / n); }
-  boots.sort((x, y) => x - y); return { mean, lo: boots[50], hi: boots[1949], se: Math.sqrt(mean * (1 - mean) / flat.length) };
-}
-const erfc = x => { const t = 1 / (1 + 0.5 * x), y = t * Math.exp(-x * x - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277))))))))); return x >= 0 ? y : 2 - y; };
-function mcnemar(rows, a, b) { let n01 = 0, n10 = 0; for (const r of rows) { const x = a(r), y = b(r); if (x && !y) n10++; else if (!x && y) n01++; }
-  const chi = n10 + n01 ? (Math.abs(n10 - n01) - 1) ** 2 / (n10 + n01) : 0; return { v4Only: n10, oldOnly: n01, p: erfc(Math.sqrt(chi / 2)) }; }
-function calibration(rows) { const bins = Array.from({ length: 10 }, () => [0, 0, 0]); let brier = 0;
-  for (const r of rows) { const k = Math.min(9, Math.floor(r.pTop * 10)); bins[k][0]++; bins[k][1] += r.pTop; bins[k][2] += r.topIsTrue ? 1 : 0; brier += (r.pTop - (r.topIsTrue ? 1 : 0)) ** 2; }
-  return { ece: bins.reduce((s, [n, p, h]) => s + Math.abs(p - h), 0) / rows.length, brier: brier / rows.length, bins }; }
-
-const pc = m => `${(m.mean * 100).toFixed(1)}% [${(m.lo * 100).toFixed(1)}–${(m.hi * 100).toFixed(1)}]`;
+// ── statistics (tests/lib/stats.mjs) ─────────────────────────────────────────
+const mcnemar = (rows, a, b) => { const r = mcnemarAB(rows, a, b); return { v4Only: r.aOnly, oldOnly: r.bOnly, p: r.p }; };
 let fail = 0; const check = (ok, msg) => { console.log(`  ${ok ? '✓' : '✗'} ${msg}`); if (!ok) fail++; };
 console.log(`\n=== Chirping accuracy benchmark — ${nSpecies} species × ${TRIALS} clips × ${Object.keys(CONDS).length} conditions, seed ${SEED} (${((Date.now() - t0) / 1000).toFixed(0)} s) ===`);
 console.log('single-attempt accuracy, 95 % species-bootstrap CI; "region" = soft region prior (v4) / hard region filter (v3.2)\n');
@@ -100,7 +87,7 @@ for (const cond of Object.keys(CONDS)) {
   console.log(`  global  top-1  v4 ${pc(m.v4g1).padEnd(22)} v3.2 ${pc(m.o_g1)}`);
   console.log(`  global  top-3  v4 ${pc(m.v4g3).padEnd(22)} v3.2 ${pc(m.o_g3)}`);
   console.log(`  McNemar (region top-1): v4-only right ${mc.v4Only}, v3.2-only right ${mc.oldOnly}, p = ${mc.p.toExponential(1)}`);
-  console.log(`  v4 calibration: ECE ${cal.ece.toFixed(3)}, Brier ${cal.brier.toFixed(3)}; reliability ${cal.bins.map(([n, p, h]) => n ? `${(p / n).toFixed(2)}→${(h / n).toFixed(2)}` : '·').join(' ')}`);
+  console.log(`  v4 calibration: ECE ${cal.ece.toFixed(3)}, Brier ${cal.brier.toFixed(3)}; reliability ${reliability(cal.bins)}`);
   check(!(mc.oldOnly > mc.v4Only && mc.p < 0.05), 'v4 is not significantly worse than v3.2 on the same clips');
   if (cond !== 'extreme') check(cal.ece <= 0.07, `v4 top-1 probability calibrated (ECE ${cal.ece.toFixed(3)} ≤ 0.07; design target 0.05)`);
 }

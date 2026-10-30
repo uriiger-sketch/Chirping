@@ -43,7 +43,12 @@ node tests/db-lint.mjs          # catalogue invariants + perfect-measurement cei
 node tests/dsp-precision.mjs    # known-truth precision targets, v3.2 alongside
 node tests/e2e-capture.mjs      # fake microphone → real UI; tap exactness; offline path
 node tests/accuracy-benchmark.mjs   # v4 vs v3.2 on identical clips, held-out seed, CIs, ECE
+node tests/harvest-selftest.mjs     # real-audio pipeline plumbing on a mock archive
+XC_API_KEY=… node tools/xc-harvest.mjs --preflight && node tools/xc-harvest.mjs --per 10
+node tools/fit-model.mjs --write && node tests/real-benchmark.mjs [--occurrence]   # REAL audio
 ```
+Only numbers from tests/real-benchmark.mjs on harvested recordings may be called real-world
+accuracy; everything else is synthetic or known-truth and must be labelled so.
 (All Playwright tests start their own server; Playwright resolves from node_modules, PLAYWRIGHT_PATH,
 or /opt/node-tools.)
 

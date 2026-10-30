@@ -49,6 +49,22 @@ and reported accuracy that *rose* with noise.
   (v4: T = 0.7; the mixture model was *under*-confident at T = 1, ECE 0.13 → 0.05).
 - Report ECE (10 equal-width bins of top-1 probability), Brier score and the reliability table.
 
+## Fitting on real audio (tools/fit-model.mjs)
+
+- **Split by recordist, per species** (tests/lib/real-data.mjs): held-out recordists never appear in
+  that species' training data — a recordist's individual birds, site and equipment would otherwise
+  leak. ≥2 recordings stay for fitting.
+- **Empirical-Bayes shrinkage** toward the expert value: prior σ by `cf` (h/m/l → 0.08/0.15/0.30 in
+  ln f), data precision n/MAD². Robust statistics only (medians, MAD·1.4826, 10/90 % quantiles),
+  every recording weighted equally regardless of its number of windows. Texture shrinks toward the
+  type prototype with κ = 3 pseudo-recordings; P(rate detected) uses Laplace (k+1)/(n+2).
+- **Global settings by grouped CV inside the training split** (3 folds by recordist): spScale,
+  tsScale, outlier on region top-1 + ½·top-3, then the temperature by NLL. Never tune on the
+  held-out recordists; never refit from an already-fitted catalogue (start from the v4.0 snapshot).
+- **Evaluate** with tests/real-benchmark.mjs: v3.2 / v4.0 / v4.1 on the same held-out windows,
+  per window (what one app clip sees) and per recording, global / region / region + iNat season
+  prior, species-bootstrap CIs, McNemar, ECE, accuracy by SNR band.
+
 ## Benchmark protocol (tests/accuracy-benchmark.mjs)
 
 1. Render **waveforms** and run each version's real front-end. Never synthesise features.

@@ -110,7 +110,22 @@ Conditions: real app code in Chromium; in-band SNR over 150 Hz–12 kHz with whi
 - Offline, it was ranked first at 64 % using the region prior.
 - The AudioWorklet tap is bit-exact.
 
-## 3. Limits — what this audit does not establish
+## 3. Real recordings — pipeline (v4.1)
+
+The pipeline that replaces expert estimates with measurements is built and tested. It has **not yet run on real audio**: when this was written, the session's network policy still blocked `xeno-canto.org`, and no `XC_API_KEY` was set. No real-world number appears in this report until it has.
+
+| Stage | Tool | What it does |
+|---|---|---|
+| Retrieve | `tools/xc-harvest.mjs` | Fetches up to 10 recordings per species: quality A/B, no background species, songs for songbirds, ≤2 per recordist, spread across countries. Each is decoded in Chromium, cut into 8 s windows and measured with the app's own `analyzePCM` plus the v3.2 replay. Only measurements are kept (`data/xc-features.jsonl`, attribution in `docs/xc-attribution.md`); audio is discarded. |
+| Train | `tools/fit-model.mjs` | Splits recordings by recordist. Shrinks each species' expert values (empirical Bayes) toward robust statistics of its training windows, and stores the species' own spread, texture and rate-detection rate (`x`, confidence `d`). Cross-validates the global settings and temperature by recordist inside the training split. |
+| Evaluate | `tests/real-benchmark.mjs` | Scores v3.2 / v4.0 / v4.1 on the same held-out recordists, per window and per recording; global, region, and region plus the live iNaturalist seasonal prior. Reports species-bootstrap CIs, McNemar and ECE. |
+| Plumbing test | `tests/harvest-selftest.mjs` | Runs the three stages end to end against a mock archive of synthetic WAVs: selection rules, an auth failure, resumability, write-back plus lint, determinism. |
+
+To run it:
+1. Allow `xeno-canto.org`, `api.inaturalist.org` and `api.gbif.org` in the environment's network settings, and set `XC_API_KEY`.
+2. Then: `node tools/xc-harvest.mjs --preflight`, then `--per 10` (about 1–2 h), then `node tools/fit-model.mjs --write`, then `node tests/real-benchmark.mjs --occurrence`.
+
+## 4. Limits — what this audit does not establish
 
 - **No real recordings were available.** xeno-canto, Macaulay and Wikimedia are blocked by this environment's network policy.
   - The benchmark is a *self-consistency* test. The generator renders each species from its own catalogue entry, deliberately mismatched to the model in pitch spread, note-rate jitter, texture realisations, noise and level.

@@ -18,7 +18,8 @@ which capped *any* frequency-only classifier at 55.7 % top-1, and contained humm
 | `fmin`/`fmax` | Lower/upper limits of that vocalization's visible energy (≈ −20 dB from peak; Raven Freq 5 %/95 % widened slightly). Not the whole repertoire | `f5`/`f95` (must fall inside) |
 | `t` | Dominant texture: `w` tonal whistle (incl. near-pure hoots), `h` harmonic stack, `n` noisy/harsh/buzzy, `t` trill (≥ ~8 similar notes/s), `c` complex warble / mimicry, `p` percussive (drum, bill-clatter) | `conc1`, `conc3`, `pitchIQR` |
 | `nr` | `[lo,hi]` notes or syllables per second **within a bout**; `null` for a single sustained note | `noteRate` |
-| `c` / `cf` | Confidence `h`/`m`/`l` in (`t`,`nr`) / in the frequencies. `h` = established and documented, `m` = plausible from the species or genus, `l` = uncertain or unchanged template | model trusts `c` at 0.9/0.75/0.5 and widens σ by 1/1.25/1.6 for `cf` |
+| `c` / `cf` | Confidence `h`/`m`/`l` in (`t`,`nr`) / in the frequencies. `h` = established and documented, `m` = plausible from the species or genus, `l` = uncertain or unchanged template, `d` = **measured** from real recordings by tools/fit-model.mjs (requires `x`) | model trusts `c` at 0.9/0.75/0.5/0.95 and widens σ by 1/1.25/1.6 for `cf` (for `d`, σ comes from `x.sp`) |
+| `x` | Measured parameters `{n, sp, tx:[logit c1, logit c3, ln(IQR+0.02)], ts, rd}`: training recordings, the species' own ln-pitch spread, its texture centre and spread, and P(note rate detected) | replaces the type prototype and catalogue-confidence σ in `logLik` |
 | `r` | Realms where the species **regularly** occurs — breeding, wintering, or an established introduced population; never vagrants | soft region prior |
 | `sy` | Other binomials/trinomials under which iNaturalist/GBIF list the same population (recent splits, genus moves) | occurrence-prior name matching |
 
@@ -56,6 +57,26 @@ ceiling under perfect measurement for frequency-only matching and with `t`+`nr`,
 (two species are frequency-twins when fdom differs <5 % and both band edges <10 %; descriptor-twins when
 also `t` matches and `nr` ranges overlap). Current: 54.5 % → 77.3 % global, 85.7–94.4 % per realm. A
 change that lowers the descriptor ceiling needs a reason in the provenance file.
+
+## Measuring the catalogue from real recordings (preferred over any expert value)
+
+1. `XC_API_KEY=… node tools/xc-harvest.mjs --preflight` — key, API v3 fields, MP3 decode in
+   Chromium, live iNat/GBIF parse. Then `node tools/xc-harvest.mjs --per 10` (resumable, ≤1 API
+   call/s). Selection per species: query `gen:<G> sp:<e> q:A`, then `q:B`, then synonyms; keep
+   5–120 s recordings; rank quality → no background species (`also` empty) → `type` contains
+   "song" for t ∈ {w,t,c} → seeded shuffle; **≤2 per recordist**, one per country first.
+2. Each recording is decoded at 48 kHz (band capped at 0.45·`smp` when the original rate is low),
+   cut into 8 s windows, measured by the app's own `analyzePCM` (and the v3.2 replay); up to 6
+   non-silent windows by SNR are kept. **Audio is never stored** — only `data/xc-features.jsonl`
+   and `docs/xc-attribution.md` (CC licences require attribution even for derived data).
+3. `node tools/fit-model.mjs --write` fits from TRAIN recordings only (recordist-disjoint split)
+   and writes `fdom/fmin/fmax/nr`, `c/cf = "d"` and `x` back; the expert prior always comes from
+   the frozen `data/catalogue-v4.0.json`. Read its audit lines: expert `fdom` >25 % off and expert
+   `t` ≠ nearest measured texture are catalogue errors revealed by real audio — record them in the
+   provenance file, do not hand-edit around them.
+4. Known biases of archive audio: MP3 coding, quality-A selection (cleaner than phone clips),
+   recordist filtering (many high-pass their uploads), and one dominant voice per window assumed.
+   `tests/harvest-selftest.mjs` checks the plumbing on a mock archive of synthetic recordings.
 
 ## Merging curated batches
 

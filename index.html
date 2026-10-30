@@ -1606,8 +1606,9 @@ function analyzeFrames(rows0,g){
 // ("not in the catalogue") competes with every species. Rules: .claude/skills/classifier-statistics.
 const MODEL={
   sigPeak:0.12,               // σ of ln(f_peak) around ln(fdom): intraspecific + catalogue spread
-  cfScale:{h:1,m:1.25,l:1.6}, // catalogue frequency confidence widens σ
-  cTrust:{h:0.9,m:0.75,l:0.5},// probability the descriptor (t, nr) is right; else background
+  cfScale:{h:1,m:1.25,l:1.6,d:1},   // catalogue frequency confidence widens σ (d = measured, see b.x)
+  cTrust:{h:0.9,m:0.75,l:0.5,d:0.95},// probability the descriptor (t, nr) is right; else background
+  spScale:1,tsScale:1,              // multipliers on measured per-species spreads (fitted on real audio)
   harm:0.02,                  // weight of the octave alternatives (2·fdom, fdom/2)
   outlier:0.05,               // per-term background mixture weight
   tauBand:0.05,sigBand:0.1,   // F5 ∈ [ln fmin−τ, ln fdom], F95 ∈ [ln fdom, ln fmax+τ], Gaussian tails σ
@@ -1644,8 +1645,11 @@ function featureVector(a){
 const BG={peak:-Math.log(MODEL.bandLn[1]-MODEL.bandLn[0]),rate:-Math.log(MODEL.rateLn[1]-MODEL.rateLn[0]),
   type:x=>logNorm(x.u1,1.0,2.4)+logNorm(x.u3,2.0,2.4)+(x.v!==null?logNorm(x.v,-1.9,1.2):0)};
 
+// b.x (when present) holds the species' own spread, texture and rate-detection rate measured from
+// real recordings (tools/fit-model.mjs); otherwise catalogue confidence and type prototypes apply.
 function logLik(x,b,wide=1){
-  const M=MODEL,sig=M.sigPeak*M.cfScale[b.cf||"m"]*wide,ld=Math.log(b.fdom),out=M.outlier;
+  const M=MODEL,X=b.x,ld=Math.log(b.fdom),out=M.outlier;
+  const sig=(X?Math.max(0.04,X.sp*M.spScale):M.sigPeak*M.cfScale[b.cf||"m"])*wide;
   // peak: mixture over detected peaks; each may be fdom or (rarely) its octave
   let lp=-Infinity;
   for(let j=0;j<x.lnPk.length;j++){
@@ -1656,18 +1660,19 @@ function logLik(x,b,wide=1){
   let L=x.lnPk.length?logMix(lp,BG.peak,out):0;
   // band edges
   if(x.lnF5!==null){
-    const sb=M.sigBand*M.cfScale[b.cf||"m"]*wide,lmin=Math.log(b.fmin),lmax=Math.log(b.fmax);
+    const sb=M.sigBand*(X?1:M.cfScale[b.cf||"m"])*wide,lmin=Math.log(b.fmin),lmax=Math.log(b.fmax);
     L+=logMix(logPlateau(x.lnF5,lmin-M.tauBand,ld,sb),BG.peak,out)+logMix(logPlateau(x.lnF95,ld,lmax+M.tauBand,sb),BG.peak,out);
   }
   // descriptors, trusted with probability cTrust[c]
-  const tr=M.cTrust[b.c||"m"],T=M.types[b.t];
+  const tr=M.cTrust[b.c||"m"],T=X?[X.tx[0],X.tx[1],X.ts*M.tsScale,X.tx[2]]:M.types[b.t],sv=X?X.ts*M.tsScale:M.sigIQR;
   if(T&&x.lnPk.length){const st=T[2]*wide;
-    L+=logMix(logNorm(x.u1,T[0],st)+logNorm(x.u3,T[1],st)+(x.v!==null?logNorm(x.v,T[3],M.sigIQR*wide):0),BG.type(x),1-tr);}
+    L+=logMix(logNorm(x.u1,T[0],st)+logNorm(x.u3,T[1],st)+(x.v!==null?logNorm(x.v,T[3],sv*wide):0),BG.type(x),1-tr);}
+  const pd=Math.min(0.95,Math.max(0.05,X?X.rd:b.nr?M.rateDetect:M.rateNullDetect));
   let lr;
-  if(b.nr){lr=x.lnRate===null?Math.log(1-M.rateDetect)
-      :Math.log(M.rateDetect)+logMix(logMix(logPlateau(x.lnRate,Math.log(b.nr[0]),Math.log(b.nr[1]),M.sigRate*wide),
+  if(b.nr){lr=x.lnRate===null?Math.log(1-pd)
+      :Math.log(pd)+logMix(logMix(logPlateau(x.lnRate,Math.log(b.nr[0]),Math.log(b.nr[1]),M.sigRate*wide),
         logMix(logPlateau(x.lnRate-Math.LN2,Math.log(b.nr[0]),Math.log(b.nr[1]),M.sigRate*wide),logPlateau(x.lnRate+Math.LN2,Math.log(b.nr[0]),Math.log(b.nr[1]),M.sigRate*wide),0.5),0.15),BG.rate,out);}
-  else lr=x.lnRate===null?Math.log(1-M.rateNullDetect):Math.log(M.rateNullDetect)+BG.rate;
+  else lr=x.lnRate===null?Math.log(1-pd):Math.log(pd)+BG.rate;
   const lrBg=x.lnRate===null?Math.log(0.5):Math.log(0.5)+BG.rate;
   L+=logMix(lr,lrBg,1-tr);
   return L;
