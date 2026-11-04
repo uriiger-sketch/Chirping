@@ -1,10 +1,19 @@
 {
   "name": "chirping",
   "private": true,
-  "description": "Zero-API-key, browser-only bird sound classifier. index.html is the entire app — this package.json exists only to run the accuracy benchmark in tests/.",
+  "description": "Zero-API-key, browser-only bird sound classifier. index.html is the entire app — this package.json exists only to run the test suite in tests/ and the data tools in tools/.",
   "scripts": {
     "serve": "http-server -p 8902 -s -c-1",
-    "test:benchmark": "node tests/accuracy-benchmark.mjs"
+    "test": "npm run test:lint && npm run test:dsp && npm run test:e2e && npm run test:pipeline && npm run test:benchmark",
+    "test:lint": "node tests/db-lint.mjs",
+    "test:dsp": "node tests/dsp-precision.mjs",
+    "test:e2e": "node tests/e2e-capture.mjs",
+    "test:pipeline": "node tests/harvest-selftest.mjs",
+    "test:benchmark": "node tests/accuracy-benchmark.mjs",
+    "test:real": "node tests/real-benchmark.mjs",
+    "harvest:preflight": "node tools/xc-harvest.mjs --preflight",
+    "harvest": "node tools/xc-harvest.mjs --per 10",
+    "fit": "node tools/fit-model.mjs --write"
   },
   "devDependencies": {
     "http-server": "^14.1.1",

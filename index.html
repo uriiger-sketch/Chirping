@@ -127,6 +127,7 @@ header{
 .res-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.9rem}
 .res-title{font-size:.95rem;font-weight:600}
 .res-meta{font-size:.7rem;color:var(--muted);font-family:var(--mono);margin-top:.15rem}
+.res-note{font-size:.68rem;color:var(--muted);line-height:1.45;padding:.1rem .25rem .3rem}
 .btn-close{
   background:var(--card);border:1px solid var(--border);
   border-radius:8px;padding:.3rem .55rem;
@@ -213,7 +214,7 @@ audio{border-radius:6px;outline:none;accent-color:var(--green);display:block}
       <img class="logo-icon" src="icon.svg" alt="" aria-hidden="true">
       <div>
         <div class="logo-text">Chirping</div>
-        <div class="logo-sub">Spectral Matching &middot; Free &middot; v3.2</div>
+        <div class="logo-sub">Calibrated Bioacoustics &middot; Free &middot; v4.0</div>
       </div>
     </div>
     <div class="geo-badge" aria-live="polite" aria-label="Location">
@@ -242,26 +243,28 @@ audio{border-radius:6px;outline:none;accent-color:var(--green);display:block}
       </div>
     </div>
 
-    <div class="filter-row" role="group" aria-label="Audio filters">
+    <div class="filter-row" role="group" aria-label="Display filters (identification always uses the raw, unfiltered signal)"
+         title="These shape the live picture only — identification always measures the raw, unfiltered microphone signal.">
       <div class="ftoggle on" id="fHP" role="checkbox" aria-checked="true" tabindex="0"
            onclick="toggleFilter(this)" onkeydown="kbToggle(event,this)">
-        <div class="ftoggle-dot"></div><span>Hi-pass 300 Hz</span>
+        <div class="ftoggle-dot"></div><span>View: hi-pass 300 Hz</span>
       </div>
       <div class="ftoggle on" id="fLP" role="checkbox" aria-checked="true" tabindex="0"
            onclick="toggleFilter(this)" onkeydown="kbToggle(event,this)">
-        <div class="ftoggle-dot"></div><span>Lo-pass 12 kHz</span>
+        <div class="ftoggle-dot"></div><span>View: lo-pass 12 kHz</span>
       </div>
       <div class="ftoggle on" id="fComp" role="checkbox" aria-checked="true" tabindex="0"
            onclick="toggleFilter(this)" onkeydown="kbToggle(event,this)">
-        <div class="ftoggle-dot"></div><span>Compressor</span>
+        <div class="ftoggle-dot"></div><span>View: compressor</span>
       </div>
     </div>
 
     <div class="feats" aria-live="polite" aria-label="Detected audio features">
-      <div class="feat">Peak: <span id="fPeak">&mdash;</span></div>
-      <div class="feat">Centroid: <span id="fCent">&mdash;</span></div>
-      <div class="feat">Peaks: <span id="fPeaks">&mdash;</span></div>
-      <div class="feat">Duration: <span id="fDur">&mdash;</span></div>
+      <div class="feat" title="Peak of the noise-subtracted spectrum, interpolated to ≲1 Hz">Peak: <span id="fPeak">&mdash;</span></div>
+      <div class="feat" title="5 %–95 % energy band of the call">Band: <span id="fBand">&mdash;</span></div>
+      <div class="feat" title="In-band signal-to-noise ratio, 150 Hz–12 kHz">SNR: <span id="fSnr">&mdash;</span></div>
+      <div class="feat" title="Spectral concentration: whistle ≈ 100 %, screech or buzz ≪ 50 %">Tone: <span id="fTone">&mdash;</span></div>
+      <div class="feat" title="Repetition rate of notes from the envelope autocorrelation">Rate: <span id="fRate">&mdash;</span></div>
     </div>
   </div>
 </div>
@@ -275,7 +278,7 @@ audio{border-radius:6px;outline:none;accent-color:var(--green);display:block}
 <div id="results" aria-live="polite" aria-label="Identification results">
   <div class="res-hdr">
     <div>
-      <div class="res-title">Top 3 Matches</div>
+      <div class="res-title" id="resTitle">Top 3 Matches</div>
       <div class="res-meta" id="resMeta"></div>
     </div>
     <button class="btn-close" id="closeBtn" aria-label="Close results">&#x2715;</button>
@@ -290,699 +293,706 @@ audio{border-radius:6px;outline:none;accent-color:var(--green);display:block}
 "use strict";
 
 // ── Bird species database ─────────────────────────────────────────────────────
-// n=name, s=sci, fmin/fmax/fdom Hz, r=regions, h=habitat, f=fun fact, w=wiki slug
+// n=name, s=sci, fmin/fmax/fdom Hz (primary advertising vocalization: band limits and peak-energy
+// frequency), r=regions, t=vocal type (w whistle, h harmonic stack, n noisy/buzzy, t trill,
+// c complex warble, p percussive), nr=[lo,hi] notes per second (null = single sustained note),
+// c/cf = confidence (h/m/l) in t+nr / in the frequencies, sy=synonyms for occurrence look-ups,
+// h=habitat, f=fun fact, w=wiki slug. Curated by an expert-panel pass in v4 (provenance and
+// per-entry rationale: docs/bird-db-provenance.json). Rules: .claude/skills/bird-acoustic-data.
 const BIRD_DB = [
   // North America
-  {n:"American Robin",s:"Turdus migratorius",fmin:2000,fmax:5000,fdom:2800,r:["na"],
+  {n:"American Robin",s:"Turdus migratorius",fmin:2000,fmax:5000,fdom:2800,r:["na"],t:"w",nr:[2,4],c:"h",cf:"h",
    h:"Open woodlands, parks, and suburban lawns across North America.",
    f:"Males begin singing in pre-dawn darkness — among the first to start the dawn chorus.",w:"American_robin"},
-  {n:"Northern Cardinal",s:"Cardinalis cardinalis",fmin:1500,fmax:6500,fdom:3800,r:["na"],
+  {n:"Northern Cardinal",s:"Cardinalis cardinalis",fmin:1500,fmax:6500,fdom:3800,r:["na"],t:"w",nr:[2,8],c:"m",cf:"m",
    h:"Forest edges, thickets, gardens, and suburban yards in eastern North America.",
    f:"Unlike most female songbirds, female cardinals also sing — sometimes from inside the nest.",w:"Northern_cardinal"},
-  {n:"Mourning Dove",s:"Zenaida macroura",fmin:300,fmax:1200,fdom:600,r:["na"],
+  {n:"Mourning Dove",s:"Zenaida macroura",fmin:300,fmax:900,fdom:450,r:["na"],t:"w",nr:[1,2],c:"h",cf:"m",
    h:"Open fields, roadsides, and suburban areas; one of the most abundant birds in North America.",
    f:"Can fly at up to 88 km/h — the wing whistle on take-off is produced by its primary feathers.",w:"Mourning_dove"},
-  {n:"Black-capped Chickadee",s:"Poecile atricapillus",fmin:2000,fmax:8000,fdom:4500,r:["na"],
+  {n:"Black-capped Chickadee",s:"Poecile atricapillus",fmin:2900,fmax:4600,fdom:3700,r:["na"],t:"w",nr:[1.5,2.5],c:"h",cf:"h",sy:["Parus atricapillus"],
    h:"Mixed and deciduous forests, parks, and suburban areas across northern North America.",
    f:"Their chick-a-dee call encodes threat information — more 'dee' notes means more danger.",w:"Black-capped_chickadee"},
-  {n:"American Crow",s:"Corvus brachyrhynchos",fmin:400,fmax:3000,fdom:1400,r:["na"],
+  {n:"American Crow",s:"Corvus brachyrhynchos",fmin:400,fmax:3000,fdom:1400,r:["na"],t:"h",nr:[1.5,3],c:"m",cf:"m",
    h:"Nearly every terrestrial habitat in North America from forests to cities.",
    f:"Crows hold 'funerals' — gathering around dead crows — apparently to learn about dangers.",w:"American_crow"},
-  {n:"Blue Jay",s:"Cyanocitta cristata",fmin:600,fmax:5500,fdom:2800,r:["na"],
+  {n:"Blue Jay",s:"Cyanocitta cristata",fmin:600,fmax:5500,fdom:2800,r:["na"],t:"n",nr:[2,4],c:"m",cf:"m",
    h:"Forest edges, oak woodlands, parks, and suburbs in eastern North America.",
    f:"Can mimic the calls of hawks so accurately that other birds take cover.",w:"Blue_jay"},
-  {n:"Song Sparrow",s:"Melospiza melodia",fmin:1200,fmax:7500,fdom:3800,r:["na"],
+  {n:"Song Sparrow",s:"Melospiza melodia",fmin:1200,fmax:7500,fdom:3800,r:["na"],t:"c",nr:[4,15],c:"m",cf:"m",
    h:"Dense shrubs near water, marshes, and weedy fields across North America.",
    f:"Each male has a unique song repertoire of up to 20 different song types.",w:"Song_sparrow"},
-  {n:"House Wren",s:"Troglodytes aedon",fmin:2000,fmax:8500,fdom:4500,r:["na","sa"],
+  {n:"House Wren",s:"Troglodytes aedon",fmin:2000,fmax:8500,fdom:4500,r:["na","sa"],t:"t",nr:[10,20],c:"m",cf:"m",sy:["Troglodytes musculus"],
    h:"Dense shrubby vegetation near forest edges, gardens, and parks across the Americas.",
    f:"Despite its tiny size, it fiercely defends territory and will destroy other birds' eggs.",w:"House_wren"},
-  {n:"Wood Thrush",s:"Hylocichla mustelina",fmin:1000,fmax:6000,fdom:3200,r:["na"],
+  {n:"Wood Thrush",s:"Hylocichla mustelina",fmin:1000,fmax:6000,fdom:3200,r:["na"],t:"w",nr:[4,10],c:"h",cf:"m",
    h:"Interior of deciduous forests in eastern North America.",
    f:"Produces two notes simultaneously using both sides of its syrinx, creating its flute-like song.",w:"Wood_thrush"},
-  {n:"Barred Owl",s:"Strix varia",fmin:200,fmax:1200,fdom:550,r:["na"],
+  {n:"Barred Owl",s:"Strix varia",fmin:200,fmax:1200,fdom:550,r:["na"],t:"w",nr:[2,4],c:"m",cf:"m",
    h:"Dense forests near water, swamps, and wooded suburbs of eastern North America.",
    f:"Its call sounds like 'Who cooks for you? Who cooks for you-all?' — a classic forest sound.",w:"Barred_owl"},
-  {n:"Common Loon",s:"Gavia immer",fmin:400,fmax:1200,fdom:700,r:["na"],
+  {n:"Common Loon",s:"Gavia immer",fmin:600,fmax:3000,fdom:1600,r:["na","eu"],t:"h",nr:[2,5],c:"m",cf:"m",
    h:"Clear northern lakes for breeding; open ocean coastlines in winter.",
    f:"Its haunting yodel travels over 10 km and is used only by males to advertise territory.",w:"Common_loon"},
-  {n:"Killdeer",s:"Charadrius vociferus",fmin:1000,fmax:5000,fdom:2400,r:["na"],
+  {n:"Killdeer",s:"Charadrius vociferus",fmin:1000,fmax:5000,fdom:2400,r:["na","sa"],t:"w",nr:[2,5],c:"m",cf:"l",
    h:"Open ground: gravel, lawns, mudflats, and fields across North and Central America.",
    f:"Performs a convincing broken-wing display to lure predators away from its ground nest.",w:"Killdeer"},
-  {n:"Baltimore Oriole",s:"Icterus galbula",fmin:1200,fmax:5500,fdom:2800,r:["na"],
+  {n:"Baltimore Oriole",s:"Icterus galbula",fmin:1200,fmax:5500,fdom:2800,r:["na","sa"],t:"w",nr:[3,6],c:"h",cf:"m",
    h:"Deciduous forest canopy and suburban trees in eastern North America.",
    f:"Builds one of the most elaborate nests in North America — a hanging woven pouch.",w:"Baltimore_oriole"},
-  {n:"American Goldfinch",s:"Spinus tristis",fmin:1500,fmax:8000,fdom:4200,r:["na"],
+  {n:"American Goldfinch",s:"Spinus tristis",fmin:1500,fmax:8000,fdom:4200,r:["na"],t:"c",nr:[5,12],c:"m",cf:"m",sy:["Carduelis tristis"],
    h:"Open fields, weedy meadows, and gardens with thistles and sunflowers.",
    f:"Delays nesting until mid-summer to coincide with peak thistle-seed availability.",w:"American_goldfinch"},
-  {n:"Eastern Bluebird",s:"Sialia sialis",fmin:1000,fmax:6000,fdom:3500,r:["na"],
+  {n:"Eastern Bluebird",s:"Sialia sialis",fmin:1500,fmax:5000,fdom:3000,r:["na"],t:"w",nr:[2,5],c:"m",cf:"m",
    h:"Open woodlands, fields with scattered trees, and forest edges in eastern North America.",
    f:"Bluebirds can spot a caterpillar on the ground from 30 metres away.",w:"Eastern_bluebird"},
-  {n:"Red-tailed Hawk",s:"Buteo jamaicensis",fmin:600,fmax:3500,fdom:1800,r:["na"],
+  {n:"Red-tailed Hawk",s:"Buteo jamaicensis",fmin:1000,fmax:5000,fdom:2400,r:["na"],t:"n",nr:null,c:"h",cf:"l",
    h:"Open to semi-open areas including deserts, grasslands, and roadsides across North America.",
    f:"The scream used for every Hollywood eagle scene is actually a Red-tailed Hawk call.",w:"Red-tailed_hawk"},
-  {n:"Downy Woodpecker",s:"Dryobates pubescens",fmin:800,fmax:5000,fdom:2200,r:["na"],
+  {n:"Downy Woodpecker",s:"Dryobates pubescens",fmin:800,fmax:5000,fdom:2200,r:["na"],t:"p",nr:[14,18],c:"h",cf:"l",sy:["Picoides pubescens"],
    h:"Deciduous forests, orchards, parks, and suburban areas across North America.",
    f:"Its skull has spongy shock-absorbing bone; the bill hammers up to 20 times per second.",w:"Downy_woodpecker"},
-  {n:"White-throated Sparrow",s:"Zonotrichia albicollis",fmin:1500,fmax:6000,fdom:3200,r:["na"],
+  {n:"White-throated Sparrow",s:"Zonotrichia albicollis",fmin:2500,fmax:5200,fdom:3900,r:["na"],t:"w",nr:[2,8],c:"h",cf:"m",
    h:"Boreal forests in summer; thickets and shrubs in eastern North America in winter.",
    f:"Its 'Oh sweet Canada Canada Canada' song is recognised across the continent.",w:"White-throated_sparrow"},
-  {n:"Great Blue Heron",s:"Ardea herodias",fmin:200,fmax:1500,fdom:600,r:["na","sa"],
+  {n:"Great Blue Heron",s:"Ardea herodias",fmin:200,fmax:1500,fdom:600,r:["na","sa"],t:"n",nr:null,c:"m",cf:"l",
    h:"Wetlands, marshes, lake shores, and rivers across North and Central America.",
    f:"Stands motionless for hours then strikes with lightning speed, stabbing fish with its bill.",w:"Great_blue_heron"},
-  {n:"Ruby-throated Hummingbird",s:"Archilochus colubris",fmin:400,fmax:3000,fdom:1200,r:["na"],
+  {n:"Ruby-throated Hummingbird",s:"Archilochus colubris",fmin:2000,fmax:8000,fdom:4000,r:["na"],t:"n",nr:[3,10],c:"l",cf:"l",
    h:"Open woodland, forest edges, meadows, and gardens in eastern North America.",
    f:"Its wings beat 53 times per second; it can fly backwards and briefly upside-down.",w:"Ruby-throated_hummingbird"},
-  {n:"Carolina Wren",s:"Thryothorus ludovicianus",fmin:1500,fmax:7000,fdom:3500,r:["na"],
+  {n:"Carolina Wren",s:"Thryothorus ludovicianus",fmin:1500,fmax:7000,fdom:3500,r:["na"],t:"w",nr:[3,6],c:"m",cf:"m",
    h:"Dense thickets, woodland understory, and suburban shrubs in eastern North America.",
    f:"One of the loudest birds relative to its size — its song carries over 400 metres.",w:"Carolina_wren"},
-  {n:"Eastern Towhee",s:"Pipilo erythrophthalmus",fmin:800,fmax:5000,fdom:2000,r:["na"],
+  {n:"Eastern Towhee",s:"Pipilo erythrophthalmus",fmin:800,fmax:5000,fdom:2000,r:["na"],t:"t",nr:[12,25],c:"m",cf:"l",
    h:"Shrubby forest edges, woodland undergrowth, and brush piles in eastern North America.",
-   f:"Its drink-your-teaaaa call is one of the most recognisable sounds of eastern thickets.",w:"Eastern_towhee"},
-  {n:"Gray Catbird",s:"Dumetella carolinensis",fmin:800,fmax:7500,fdom:2500,r:["na"],
+   f:"Its drink-your-teaaaa song is one of the most recognisable sounds of eastern thickets.",w:"Eastern_towhee"},
+  {n:"Gray Catbird",s:"Dumetella carolinensis",fmin:800,fmax:7500,fdom:2500,r:["na"],t:"c",nr:[4,8],c:"h",cf:"m",
    h:"Dense shrubs, thickets, and suburban hedges across eastern North America.",
-   f:"Named for its mewing cat call; can mimic over 100 other bird species in a single song bout.",w:"Gray_catbird"},
-  {n:"Cedar Waxwing",s:"Bombycilla cedrorum",fmin:4000,fmax:9000,fdom:7000,r:["na"],
+   f:"Named for its mewing cat call; its rambling song can run for minutes, weaving in sounds copied from other species.",w:"Gray_catbird"},
+  {n:"Cedar Waxwing",s:"Bombycilla cedrorum",fmin:5500,fmax:9500,fdom:7800,r:["na"],t:"t",nr:[15,30],c:"l",cf:"m",
    h:"Open woodland, forest edges, and fruiting trees across North America.",
    f:"Passes berries beak-to-beak in a line — a rare cooperative social bonding behaviour.",w:"Cedar_waxwing"},
-  {n:"Red-winged Blackbird",s:"Agelaius phoeniceus",fmin:800,fmax:5000,fdom:1800,r:["na"],
+  {n:"Red-winged Blackbird",s:"Agelaius phoeniceus",fmin:800,fmax:5000,fdom:3000,r:["na"],t:"t",nr:[15,35],c:"l",cf:"m",
    h:"Marshes, wet meadows, and roadside ditches across North America.",
-   f:"One of the most abundant birds in North America; males have up to 15 different song types.",w:"Red-winged_blackbird"},
-  {n:"House Finch",s:"Haemorhous mexicanus",fmin:1500,fmax:8000,fdom:4000,r:["na"],
+   f:"One of the most abundant birds in North America; each male sings several (about 2–8) song types.",w:"Red-winged_blackbird"},
+  {n:"House Finch",s:"Haemorhous mexicanus",fmin:1500,fmax:8000,fdom:4000,r:["na"],t:"c",nr:[5,10],c:"m",cf:"m",sy:["Carpodacus mexicanus"],
    h:"Urban and suburban areas, open woodland, and farmland across North America.",
    f:"Males with redder plumage from carotenoid-rich diets are preferred by females as better providers.",w:"House_finch"},
-  {n:"Dark-eyed Junco",s:"Junco hyemalis",fmin:1000,fmax:7000,fdom:3000,r:["na"],
+  {n:"Dark-eyed Junco",s:"Junco hyemalis",fmin:2500,fmax:7000,fdom:4000,r:["na"],t:"t",nr:[10,20],c:"h",cf:"m",
    h:"Coniferous and mixed forests; widespread across North America in winter.",
    f:"Called 'snowbirds' — their arrival in lowlands predicts incoming winter weather.",w:"Dark-eyed_junco"},
-  {n:"Yellow Warbler",s:"Setophaga petechia",fmin:2500,fmax:8000,fdom:5000,r:["na","sa"],
+  {n:"Yellow Warbler",s:"Setophaga petechia",fmin:2500,fmax:8000,fdom:5000,r:["na","sa"],t:"w",nr:[5,10],c:"m",cf:"m",sy:["Dendroica petechia","Setophaga aestiva"],
    h:"Willows and shrubs near water, forest edges, and gardens across North America.",
    f:"When a cowbird lays an egg in its nest it simply builds a new floor over it — sometimes up to 6 layers.",w:"Yellow_warbler"},
-  {n:"Great Horned Owl",s:"Bubo virginianus",fmin:100,fmax:800,fdom:350,r:["na","sa"],
+  {n:"Great Horned Owl",s:"Bubo virginianus",fmin:200,fmax:800,fdom:350,r:["na","sa"],t:"w",nr:[1.5,4],c:"h",cf:"m",
    h:"Every habitat from arctic tundra to tropical rainforest across the Americas.",
    f:"Its ear tufts are not ears — the actual asymmetric ear openings allow pinpoint sound triangulation.",w:"Great_horned_owl"},
-  {n:"Northern Mockingbird",s:"Mimus polyglottos",fmin:1000,fmax:8000,fdom:3500,r:["na"],
+  {n:"Northern Mockingbird",s:"Mimus polyglottos",fmin:1000,fmax:8000,fdom:3500,r:["na"],t:"c",nr:[4,10],c:"h",cf:"m",
    h:"Open to semi-open habitats, suburbs, and parkland across North America.",
    f:"Can learn over 200 songs and mimics frogs, insects, and other birds — sometimes singing all night.",w:"Northern_mockingbird"},
-  {n:"Indigo Bunting",s:"Passerina cyanea",fmin:2000,fmax:9000,fdom:5000,r:["na"],
+  {n:"Indigo Bunting",s:"Passerina cyanea",fmin:2000,fmax:9000,fdom:5000,r:["na"],t:"w",nr:[4,8],c:"m",cf:"m",
    h:"Open woodland edges, old fields, and roadsides in eastern North America.",
    f:"Navigates by the stars during migration — it learns the stellar rotation centre at night as a nestling.",w:"Indigo_bunting"},
-  {n:"Ovenbird",s:"Seiurus aurocapilla",fmin:2500,fmax:9000,fdom:5500,r:["na"],
+  {n:"Ovenbird",s:"Seiurus aurocapilla",fmin:2500,fmax:9000,fdom:5500,r:["na"],t:"t",nr:[6,10],c:"m",cf:"l",
    h:"Mature deciduous forest floor in eastern North America.",
-   f:"Its loud teacher-teacher-teacher crescendo can be heard over 200 metres in dense forest.",w:"Ovenbird_(bird)"},
-  {n:"Chimney Swift",s:"Chaetura pelagica",fmin:3000,fmax:9000,fdom:5500,r:["na"],
+   f:"Its loud teacher-teacher-teacher crescendo can be heard over 200 metres in dense forest.",w:"Ovenbird"},
+  {n:"Chimney Swift",s:"Chaetura pelagica",fmin:3000,fmax:9000,fdom:5500,r:["na","sa"],t:"t",nr:[8,15],c:"m",cf:"l",
    h:"Open sky over towns and forests in eastern North America; nests inside chimneys.",
-   f:"Spends almost its entire life airborne — it eats, drinks, mates, and even sleeps on the wing.",w:"Chimney_swift"},
-  {n:"Sandhill Crane",s:"Antigone canadensis",fmin:300,fmax:1800,fdom:800,r:["na"],
+   f:"Cannot perch upright — it clings to chimney walls, and migrating flocks roost by the thousands.",w:"Chimney_swift"},
+  {n:"Sandhill Crane",s:"Antigone canadensis",fmin:400,fmax:3000,fdom:800,r:["na","as"],t:"h",nr:[1,3],c:"m",cf:"m",sy:["Grus canadensis"],
    h:"Wetlands, grasslands, and agricultural fields across North America.",
    f:"Its bugling call can carry over 3 km; pairs perform elaborate synchronised dancing to bond.",w:"Sandhill_crane"},
   // Europe
-  {n:"Common Blackbird",s:"Turdus merula",fmin:1000,fmax:7000,fdom:3500,r:["eu","as"],
+  {n:"Common Blackbird",s:"Turdus merula",fmin:1400,fmax:7000,fdom:2300,r:["eu","as","af","au"],t:"w",nr:[4,8],c:"m",cf:"h",
    h:"Woodlands, parks, gardens, and hedgerows across Europe and Asia.",
    f:"Males improvise — no two individuals sing exactly the same song, which is largely self-taught.",w:"Common_blackbird"},
-  {n:"European Robin",s:"Erithacus rubecula",fmin:2000,fmax:9000,fdom:5000,r:["eu"],
+  {n:"European Robin",s:"Erithacus rubecula",fmin:2000,fmax:9000,fdom:5000,r:["eu","as","af"],t:"c",nr:[5,12],c:"m",cf:"m",
    h:"Woodland understory, hedgerows, parks, and gardens across Europe.",
    f:"In Britain it's year-round territorial; males sing even at night near artificial lights.",w:"European_robin"},
-  {n:"Song Thrush",s:"Turdus philomelos",fmin:1000,fmax:6500,fdom:3000,r:["eu"],
+  {n:"Song Thrush",s:"Turdus philomelos",fmin:1000,fmax:6500,fdom:3000,r:["eu","as","af","au"],t:"c",nr:[4,10],c:"h",cf:"m",
    h:"Woodland edges, parks, and gardens; repeats each phrase 2-4 times.",
    f:"Uses anvil stones to crack snail shells, leaving characteristic thrush anvils in gardens.",w:"Song_thrush"},
-  {n:"Common Chaffinch",s:"Fringilla coelebs",fmin:2000,fmax:8500,fdom:4800,r:["eu"],
+  {n:"Common Chaffinch",s:"Fringilla coelebs",fmin:2000,fmax:8500,fdom:4800,r:["eu","as","au"],t:"t",nr:[8,16],c:"h",cf:"m",
    h:"Deciduous and mixed woodland, parks, and gardens across Europe and western Asia.",
-   f:"Young males learn their local song dialect from neighbours, creating distinct regional accents.",w:"Chaffinch"},
-  {n:"Great Tit",s:"Parus major",fmin:2000,fmax:8000,fdom:4200,r:["eu","as"],
+   f:"Young males learn their local song dialect from neighbours, creating distinct regional accents.",w:"Common_chaffinch"},
+  {n:"Great Tit",s:"Parus major",fmin:2000,fmax:8000,fdom:4200,r:["eu","as","af"],t:"w",nr:[4,8],c:"h",cf:"m",
    h:"Deciduous and mixed forests, parks, and gardens across Europe and Asia.",
    f:"City Great Tits sing at higher frequencies than rural ones to be heard over traffic noise.",w:"Great_tit"},
-  {n:"Eurasian Blue Tit",s:"Cyanistes caeruleus",fmin:3000,fmax:11000,fdom:6500,r:["eu"],
+  {n:"Eurasian Blue Tit",s:"Cyanistes caeruleus",fmin:3000,fmax:11000,fdom:6500,r:["eu","as"],t:"t",nr:[10,20],c:"m",cf:"m",sy:["Parus caeruleus"],
    h:"Deciduous woodlands, parks, and gardens across Europe and western Asia.",
    f:"Can see UV light — male plumage shows vivid UV patterns invisible to the human eye.",w:"Eurasian_blue_tit"},
-  {n:"Eurasian Wren",s:"Troglodytes troglodytes",fmin:3000,fmax:11000,fdom:7000,r:["eu","as"],
+  {n:"Eurasian Wren",s:"Troglodytes troglodytes",fmin:3000,fmax:11000,fdom:6000,r:["eu","as","af"],t:"t",nr:[10,25],c:"h",cf:"m",
    h:"Dense undergrowth in woodlands, gardens, and hedgerows across Eurasia.",
    f:"For its tiny size it has one of the loudest calls in the world — up to 90 dB at one metre.",w:"Eurasian_wren"},
-  {n:"Common Cuckoo",s:"Cuculus canorus",fmin:300,fmax:1200,fdom:600,r:["eu","as"],
+  {n:"Common Cuckoo",s:"Cuculus canorus",fmin:400,fmax:1000,fdom:600,r:["eu","as","af"],t:"w",nr:[1.5,3],c:"h",cf:"h",
    h:"Open woodland, moorland, and farmland across Europe and Asia in summer.",
    f:"Each female cuckoo specialises in parasitising one host species, whose egg colour she matches.",w:"Common_cuckoo"},
-  {n:"Eurasian Skylark",s:"Alauda arvensis",fmin:1500,fmax:8000,fdom:4000,r:["eu","as"],
+  {n:"Eurasian Skylark",s:"Alauda arvensis",fmin:1500,fmax:8000,fdom:4000,r:["eu","as","af","au"],t:"c",nr:[8,15],c:"h",cf:"m",
    h:"Open grassland, moorland, and farmland across Europe and Asia.",
    f:"Males sing in continuous hovering flight for up to an hour, producing 700+ sound elements.",w:"Eurasian_skylark"},
-  {n:"Barn Swallow",s:"Hirundo rustica",fmin:1500,fmax:7000,fdom:3500,r:["eu","na","as","af"],
+  {n:"Barn Swallow",s:"Hirundo rustica",fmin:1500,fmax:7000,fdom:3500,r:["eu","na","as","af","sa","au"],t:"c",nr:[6,15],c:"m",cf:"m",
    h:"Open country near water and buildings; nests under eaves worldwide.",
    f:"Migrates up to 11,000 km twice a year between Europe and southern Africa.",w:"Barn_swallow"},
-  {n:"Blackcap Warbler",s:"Sylvia atricapilla",fmin:2500,fmax:9000,fdom:5000,r:["eu","af"],
+  {n:"Eurasian Blackcap",s:"Sylvia atricapilla",fmin:1500,fmax:9000,fdom:3700,r:["eu","af","as"],t:"c",nr:[6,12],c:"m",cf:"m",
    h:"Dense woodland understory and scrub across Europe; winters in Africa.",
-   f:"Some populations now winter in UK gardens, reversing their traditional migration due to climate change.",w:"Blackcap"},
-  {n:"Common Chiffchaff",s:"Phylloscopus collybita",fmin:3000,fmax:9000,fdom:5500,r:["eu","as"],
+   f:"Some populations now winter in UK gardens, reversing their traditional migration due to climate change.",w:"Eurasian_blackcap"},
+  {n:"Common Chiffchaff",s:"Phylloscopus collybita",fmin:3000,fmax:9000,fdom:5500,r:["eu","as","af"],t:"w",nr:[2,4],c:"h",cf:"m",
    h:"Scrub, hedgerows, and woodland edges across Europe and Asia.",
    f:"Named for its song — it genuinely sings chiff-chaff repeatedly in alternation.",w:"Common_chiffchaff"},
-  {n:"European Goldfinch",s:"Carduelis carduelis",fmin:2500,fmax:9500,fdom:5500,r:["eu"],
+  {n:"European Goldfinch",s:"Carduelis carduelis",fmin:2500,fmax:9500,fdom:5500,r:["eu","as","af","au","sa"],t:"c",nr:[8,15],c:"m",cf:"m",
    h:"Open woodland, orchards, gardens, and weedy wasteland across Europe.",
    f:"A group of goldfinches is called a charm — their tinkling song inspired the term.",w:"European_goldfinch"},
-  {n:"Eurasian Collared Dove",s:"Streptopelia decaocto",fmin:300,fmax:1000,fdom:550,r:["eu","as"],
+  {n:"Eurasian Collared Dove",s:"Streptopelia decaocto",fmin:300,fmax:1000,fdom:550,r:["eu","as","na","af"],t:"w",nr:[1.5,3],c:"h",cf:"m",
    h:"Towns, villages, and farmland across Europe and Asia.",
-   f:"Colonised all of Europe from Turkey in just 20 years (1930-1950), one of the fastest range expansions ever.",w:"Eurasian_collared_dove"},
-  {n:"Tawny Owl",s:"Strix aluco",fmin:200,fmax:1000,fdom:500,r:["eu"],
+   f:"Spread from the Balkans across nearly all of Europe between the 1930s and 1970s — one of the fastest range expansions ever.",w:"Eurasian_collared_dove"},
+  {n:"Tawny Owl",s:"Strix aluco",fmin:550,fmax:2500,fdom:800,r:["eu","as"],t:"w",nr:[2,6],c:"m",cf:"m",
    h:"Mature deciduous and mixed woodland across Europe and western Asia.",
    f:"The classic twit-twoo is a duet: females call ke-wick, males reply hoo-hoo-hooo.",w:"Tawny_owl"},
-  {n:"Yellowhammer",s:"Emberiza citrinella",fmin:2500,fmax:9000,fdom:5500,r:["eu"],
+  {n:"Yellowhammer",s:"Emberiza citrinella",fmin:2500,fmax:9000,fdom:5500,r:["eu","as","au"],t:"t",nr:[6,12],c:"h",cf:"m",
    h:"Farmland with hedgerows, scrub, and woodland edges across Europe.",
    f:"Its song mnemonic is 'a little bit of bread and no cheese' — ending on a long drawn-out note.",w:"Yellowhammer"},
-  {n:"Common Starling",s:"Sturnus vulgaris",fmin:1000,fmax:7000,fdom:3000,r:["eu","na","au"],
+  {n:"Common Starling",s:"Sturnus vulgaris",fmin:1000,fmax:7000,fdom:3000,r:["eu","na","au","as","af","sa"],t:"c",nr:[4,15],c:"h",cf:"m",
    h:"Open farmland, parks, and towns across the Northern Hemisphere.",
    f:"Can perfectly mimic ringtones, other birds, and human speech; forms murmurations of millions.",w:"Common_starling"},
-  {n:"Common Wood Pigeon",s:"Columba palumbus",fmin:200,fmax:1000,fdom:500,r:["eu"],
+  {n:"Common Wood Pigeon",s:"Columba palumbus",fmin:250,fmax:750,fdom:400,r:["eu","as","af"],t:"w",nr:[1.5,3],c:"h",cf:"m",
    h:"Woodland, farmland, parks, and cities across Europe and western Asia.",
    f:"The wing-clap during take-off is an alarm signal to alert other pigeons of danger.",w:"Common_wood_pigeon"},
-  {n:"Common Nightingale",s:"Luscinia megarhynchos",fmin:1000,fmax:8000,fdom:4000,r:["eu","af"],
-   h:"Dense thickets and shrubby woodland in southern Europe; winters in tropical Africa.",
+  {n:"Common Nightingale",s:"Luscinia megarhynchos",fmin:1000,fmax:8000,fdom:4000,r:["eu","af","as"],t:"c",nr:[5,20],c:"h",cf:"m",
+   h:"Dense thickets and shrubby woodland across Europe and western Asia; winters in tropical Africa.",
    f:"Sings at night to attract late-arriving migrants; its repertoire has over 250 distinct phrases.",w:"Common_nightingale"},
-  {n:"Common Swift",s:"Apus apus",fmin:3000,fmax:10000,fdom:6000,r:["eu","as","af"],
+  {n:"Common Swift",s:"Apus apus",fmin:3500,fmax:9000,fdom:5000,r:["eu","as","af"],t:"n",nr:null,c:"m",cf:"m",
    h:"Open sky above towns and cliffs across Europe and Asia in summer; winters in Africa.",
    f:"Spends up to 10 months continuously airborne — the longest non-stop flight of any bird.",w:"Common_swift"},
-  {n:"Pied Wagtail",s:"Motacilla alba",fmin:2000,fmax:8000,fdom:4500,r:["eu","as"],
+  {n:"White Wagtail",s:"Motacilla alba",fmin:2000,fmax:8000,fdom:4500,r:["eu","as","af"],t:"c",nr:[5,10],c:"l",cf:"l",
    h:"Open ground near water, towns, car parks, and farmland across Europe and Asia.",
-   f:"Wags its tail constantly — an honest signal to predators that it has detected them.",w:"Pied_wagtail"},
-  {n:"Dunnock",s:"Prunella modularis",fmin:3000,fmax:9500,fdom:6000,r:["eu"],
+   f:"Wags its tail constantly — an honest signal to predators that it has detected them.",w:"White_wagtail"},
+  {n:"Dunnock",s:"Prunella modularis",fmin:3000,fmax:9500,fdom:6000,r:["eu","as","au"],t:"c",nr:[10,18],c:"m",cf:"m",
    h:"Dense low vegetation, hedges, woodland edges, and gardens across Europe.",
    f:"Has one of the most complex mating systems in birds — females often mate with two males simultaneously.",w:"Dunnock"},
-  {n:"European Greenfinch",s:"Chloris chloris",fmin:2000,fmax:8500,fdom:5000,r:["eu"],
+  {n:"European Greenfinch",s:"Chloris chloris",fmin:2000,fmax:8500,fdom:5000,r:["eu","as","af","au"],t:"c",nr:[8,20],c:"m",cf:"l",sy:["Carduelis chloris"],
    h:"Woodland edges, farmland, parks, and gardens across Europe and western Asia.",
    f:"Its wheezy dzhwee call is interspersed with musical trills; it often sings in circular display flight.",w:"European_greenfinch"},
-  {n:"Long-tailed Tit",s:"Aegithalos caudatus",fmin:4000,fmax:11000,fdom:8000,r:["eu","as"],
+  {n:"Long-tailed Tit",s:"Aegithalos caudatus",fmin:4000,fmax:11000,fdom:8000,r:["eu","as"],t:"t",nr:[10,30],c:"l",cf:"l",
    h:"Woodland edges, hedgerows, and scrub across Europe and Asia.",
    f:"Builds an elastic domed nest from lichen, spiders' silk, and up to 2,000 feathers.",w:"Long-tailed_tit"},
-  {n:"Mistle Thrush",s:"Turdus viscivorus",fmin:1500,fmax:6500,fdom:3500,r:["eu","as"],
+  {n:"Mistle Thrush",s:"Turdus viscivorus",fmin:1500,fmax:6500,fdom:3500,r:["eu","as","af"],t:"w",nr:[3,7],c:"m",cf:"m",
    h:"Open woodland, parkland, and farmland across Europe and Asia.",
    f:"Sings loudly from treetops during storms — earning it the folk name 'stormcock'.",w:"Mistle_thrush"},
-  {n:"Common Pheasant",s:"Phasianus colchicus",fmin:200,fmax:2000,fdom:700,r:["eu","as"],
+  {n:"Common Pheasant",s:"Phasianus colchicus",fmin:600,fmax:4000,fdom:1000,r:["eu","as","na","au"],t:"h",nr:[3,5],c:"m",cf:"m",
    h:"Farmland, woodland edges, and scrub across Eurasia; introduced widely worldwide.",
    f:"Males produce a loud two-note crow followed by rapid wing-beats audible over 400 metres.",w:"Common_pheasant"},
-  {n:"Northern Lapwing",s:"Vanellus vanellus",fmin:600,fmax:4500,fdom:1500,r:["eu","as"],
+  {n:"Northern Lapwing",s:"Vanellus vanellus",fmin:600,fmax:4500,fdom:1500,r:["eu","as","af"],t:"h",nr:[1,3],c:"l",cf:"l",
    h:"Farmland, wet grassland, and marshes across Europe and Asia.",
-   f:"Named for its erratic tumbling display flight with the 'lapwing' sound of its broad wings.",w:"Northern_lapwing"},
-  {n:"Goldcrest",s:"Regulus regulus",fmin:5000,fmax:12000,fdom:8500,r:["eu","as"],
+   f:"Its name comes from Old English for 'leap-wink', after its erratic, tumbling display flight.",w:"Northern_lapwing"},
+  {n:"Goldcrest",s:"Regulus regulus",fmin:5000,fmax:12000,fdom:8500,r:["eu","as"],t:"t",nr:[8,15],c:"h",cf:"m",
    h:"Coniferous and mixed forest across Europe and Asia.",
    f:"Europe's smallest bird at 5 g; its ultra-high song approaches the human hearing threshold.",w:"Goldcrest"},
-  {n:"Common Linnet",s:"Linaria cannabina",fmin:2000,fmax:8000,fdom:4500,r:["eu","af"],
+  {n:"Common Linnet",s:"Linaria cannabina",fmin:2000,fmax:8000,fdom:4500,r:["eu","af","as"],t:"c",nr:[8,15],c:"m",cf:"m",sy:["Carduelis cannabina","Acanthis cannabina"],
    h:"Open heath, farmland, scrub, and coastal dunes across Europe and North Africa.",
    f:"Males turn crimson on the breast and forehead each spring via feather wear, not new moult.",w:"Common_linnet"},
   // Australia
-  {n:"Laughing Kookaburra",s:"Dacelo novaeguineae",fmin:400,fmax:3000,fdom:1200,r:["au"],
+  {n:"Laughing Kookaburra",s:"Dacelo novaeguineae",fmin:400,fmax:3000,fdom:1200,r:["au"],t:"n",nr:[4,10],c:"m",cf:"l",
    h:"Open woodland, eucalyptus forests, and suburbs of eastern Australia.",
    f:"The laughing call is a territorial announcement used at dawn and dusk.",w:"Laughing_kookaburra"},
-  {n:"Australian Magpie",s:"Gymnorhina tibicen",fmin:800,fmax:5000,fdom:2000,r:["au"],
+  {n:"Australian Magpie",s:"Gymnorhina tibicen",fmin:800,fmax:5000,fdom:2000,r:["au"],t:"c",nr:[3,8],c:"m",cf:"m",sy:["Cracticus tibicen"],
    h:"Open woodland, parks, gardens, and farmland across Australia.",
    f:"Has one of the most complex songs of any bird — can mimic up to 35 other bird species.",w:"Australian_magpie"},
-  {n:"Sulphur-crested Cockatoo",s:"Cacatua galerita",fmin:500,fmax:3500,fdom:1500,r:["au"],
+  {n:"Sulphur-crested Cockatoo",s:"Cacatua galerita",fmin:500,fmax:3500,fdom:1500,r:["au"],t:"n",nr:null,c:"h",cf:"m",
    h:"Forest, woodland, and city parks across Australia and New Guinea.",
    f:"Can live over 80 years in captivity; wild cockatoos crack open rubbish bins with their bills.",w:"Sulphur-crested_cockatoo"},
-  {n:"Rainbow Lorikeet",s:"Trichoglossus moluccanus",fmin:1000,fmax:6000,fdom:3000,r:["au"],
+  {n:"Rainbow Lorikeet",s:"Trichoglossus moluccanus",fmin:1000,fmax:6000,fdom:3000,r:["au"],t:"n",nr:[3,8],c:"m",cf:"l",sy:["Trichoglossus haematodus"],
    h:"Rainforest, woodland, and urban parks in eastern and northern Australia.",
    f:"Has a brush-tipped tongue for lapping nectar — one of the few parrots that doesn't crack seeds.",w:"Rainbow_lorikeet"},
-  {n:"Superb Fairy-wren",s:"Malurus cyaneus",fmin:4000,fmax:11000,fdom:7000,r:["au"],
+  {n:"Superb Fairy-wren",s:"Malurus cyaneus",fmin:4000,fmax:11000,fdom:7000,r:["au"],t:"t",nr:[15,30],c:"m",cf:"m",
    h:"Dense shrubby undergrowth and heathland in southeastern Australia.",
    f:"Females teach a unique password call to unhatched eggs; chicks use it as a begging call.",w:"Superb_fairywren"},
-  {n:"Eastern Whipbird",s:"Psophodes olivaceus",fmin:800,fmax:6000,fdom:2500,r:["au"],
+  {n:"Eastern Whipbird",s:"Psophodes olivaceus",fmin:800,fmax:6000,fdom:2500,r:["au"],t:"w",nr:null,c:"m",cf:"l",
    h:"Dense rainforest understory and wet scrub in eastern Australia.",
    f:"The male gives a sharp crack (the whip) and the female instantly responds chew-chew.",w:"Eastern_whipbird"},
-  {n:"Noisy Miner",s:"Manorina melanocephala",fmin:1500,fmax:7000,fdom:3500,r:["au"],
+  {n:"Noisy Miner",s:"Manorina melanocephala",fmin:1500,fmax:7000,fdom:3500,r:["au"],t:"n",nr:[3,8],c:"m",cf:"l",
    h:"Open woodland, parks, and suburban gardens in eastern and southeastern Australia.",
    f:"Highly aggressive; colony members mob and evict other bird species from territories.",w:"Noisy_miner"},
-  {n:"Willie Wagtail",s:"Rhipidura leucophrys",fmin:2000,fmax:9000,fdom:5000,r:["au"],
+  {n:"Willie Wagtail",s:"Rhipidura leucophrys",fmin:2000,fmax:9000,fdom:5000,r:["au"],t:"w",nr:[3,6],c:"m",cf:"l",
    h:"Open woodland, grassland, and urban parks across Australia.",
    f:"One of Australia's most familiar garden birds; sings at night and is fearless toward larger animals.",w:"Willie_wagtail"},
-  {n:"Galah",s:"Eolophus roseicapilla",fmin:500,fmax:4000,fdom:1500,r:["au"],
+  {n:"Galah",s:"Eolophus roseicapilla",fmin:900,fmax:5000,fdom:2500,r:["au"],t:"n",nr:[1,3],c:"m",cf:"l",sy:["Eolophus roseicapillus","Cacatua roseicapilla"],
    h:"Open grassland, woodland, and farmland across Australia.",
    f:"Lives up to 40 years and mates for life; the name is Australian slang for a fool or clown.",w:"Galah"},
-  {n:"Pied Butcherbird",s:"Cracticus nigrogularis",fmin:800,fmax:6500,fdom:2500,r:["au"],
+  {n:"Pied Butcherbird",s:"Cracticus nigrogularis",fmin:800,fmax:6500,fdom:2000,r:["au"],t:"w",nr:[2,6],c:"h",cf:"l",
    h:"Open woodland and scrub across Australia except the southeast.",
    f:"Has one of the most beautiful songs of any Australian bird — complex, melodic, and often sung at dawn.",w:"Pied_butcherbird"},
-  {n:"Tawny Frogmouth",s:"Podargus strigoides",fmin:100,fmax:800,fdom:300,r:["au"],
+  {n:"Tawny Frogmouth",s:"Podargus strigoides",fmin:100,fmax:800,fdom:300,r:["au"],t:"w",nr:[1.5,4],c:"m",cf:"l",
    h:"Woodland, forest, and suburban gardens across Australia.",
    f:"Camouflages as a broken branch by day; not an owl — more closely related to nightjars.",w:"Tawny_frogmouth"},
   // Asia
-  {n:"Oriental Magpie-Robin",s:"Copsychus saularis",fmin:1500,fmax:8500,fdom:4500,r:["as"],
+  {n:"Oriental Magpie-Robin",s:"Copsychus saularis",fmin:1500,fmax:8500,fdom:4500,r:["as"],t:"c",nr:[3,8],c:"m",cf:"m",
    h:"Open woodland, gardens, and parks across South and Southeast Asia.",
    f:"The national bird of Bangladesh; one of the finest songsters in Asia, active at dawn and dusk.",w:"Oriental_magpie-robin"},
-  {n:"Red-whiskered Bulbul",s:"Pycnonotus jocosus",fmin:1500,fmax:7000,fdom:3500,r:["as","au"],
-   h:"Forest edges, gardens, and parks across tropical Asia; introduced to Australia and Florida.",
+  {n:"Red-whiskered Bulbul",s:"Pycnonotus jocosus",fmin:1500,fmax:7000,fdom:2500,r:["as","au","na","af"],t:"w",nr:[3,6],c:"m",cf:"m",
+   h:"Forest edges, gardens, and parks across tropical Asia; introduced to Australia, Florida, Hawaii, and the Mascarenes.",
    f:"Whistles a cheerful pettigrew that sounds almost like a squeaky toy.",w:"Red-whiskered_bulbul"},
-  {n:"Common Myna",s:"Acridotheres tristis",fmin:800,fmax:5500,fdom:2000,r:["as","au","af"],
+  {n:"Common Myna",s:"Acridotheres tristis",fmin:800,fmax:5500,fdom:2000,r:["as","au","af","na"],t:"c",nr:[2,6],c:"m",cf:"m",
    h:"Urban and suburban areas, farmland across Asia and introduced worldwide.",
    f:"Listed among the world's 100 worst invasive species; can mimic 30+ species and human speech.",w:"Common_myna"},
-  {n:"Common Kingfisher",s:"Alcedo atthis",fmin:2000,fmax:7000,fdom:4000,r:["eu","as"],
-   h:"Rivers, streams, and lake shores with clear water across Europe and Asia.",
-   f:"Dives at 40 km/h; its beak shape entering water creates no splash — which inspired bullet train design.",w:"Common_kingfisher"},
-  {n:"Japanese Bush Warbler",s:"Horornis diphone",fmin:1500,fmax:6500,fdom:3500,r:["as"],
-   h:"Dense bamboo, scrub, and thickets in Japan, China, and Korea.",
+  {n:"Common Kingfisher",s:"Alcedo atthis",fmin:2000,fmax:7000,fdom:4000,r:["eu","as","af","au"],t:"w",nr:[2,5],c:"m",cf:"m",
+   h:"Rivers, streams, and lake shores with clear water from Europe and North Africa to Asia and New Guinea.",
+   f:"Dives at 40 km/h; its beak enters water with barely a splash — which inspired bullet train design.",w:"Common_kingfisher"},
+  {n:"Japanese Bush Warbler",s:"Horornis diphone",fmin:1000,fmax:5000,fdom:2200,r:["as"],t:"w",nr:[1,4],c:"m",cf:"m",sy:["Cettia diphone","Horornis canturians"],
+   h:"Dense bamboo, scrub, and thickets in Japan, China, and Korea; introduced to Hawaii.",
    f:"Its rising ho-ho-kekyo call is the traditional Japanese sound of spring, used in poetry for centuries.",w:"Japanese_bush_warbler"},
-  {n:"Barn Owl",s:"Tyto alba",fmin:200,fmax:2500,fdom:800,r:["na","eu","as","au","af","sa"],
+  {n:"Barn Owl",s:"Tyto alba",fmin:1000,fmax:10000,fdom:3000,r:["na","eu","as","au","af","sa"],t:"n",nr:null,c:"h",cf:"m",sy:["Tyto furcata","Tyto javanica"],
    h:"Open farmland, grassland, and woodland edges on every continent except Antarctica.",
    f:"Its heart-shaped face acts as a parabolic dish, giving it hearing precise enough to hunt in total darkness.",w:"Barn_owl"},
-  {n:"Indian Peafowl",s:"Pavo cristatus",fmin:200,fmax:1000,fdom:400,r:["as"],
+  {n:"Indian Peafowl",s:"Pavo cristatus",fmin:300,fmax:4000,fdom:1000,r:["as","au"],t:"h",nr:[0.5,1.5],c:"m",cf:"m",
    h:"Open forest and farmland in South Asia; introduced widely worldwide.",
-   f:"The eyes in the tail feathers produce infrasound vibrations used in courtship communication.",w:"Indian_peafowl"},
-  {n:"Asian Koel",s:"Eudynamys scolopaceus",fmin:500,fmax:3000,fdom:1200,r:["as","au"],
-   h:"Woodland, parks, and gardens across South and Southeast Asia and Australia.",
+   f:"Males shiver their fanned train in display, producing infrasound that other peafowl can detect (Freeman & Hare 2015).",w:"Indian_peafowl"},
+  {n:"Asian Koel",s:"Eudynamys scolopaceus",fmin:500,fmax:3000,fdom:1200,r:["as"],t:"w",nr:[1,3],c:"m",cf:"m",sy:["Eudynamys scolopacea"],
+   h:"Woodland, parks, and gardens across South Asia, southern China, and Southeast Asia.",
    f:"A brood parasite that lays its eggs in crow nests; its rising ko-el call heralds the monsoon in India.",w:"Asian_koel"},
-  {n:"Black-naped Oriole",s:"Oriolus chinensis",fmin:1000,fmax:6500,fdom:3000,r:["as"],
-   h:"Forest, parks, and gardens across South and Southeast Asia.",
-   f:"Has a rich, liquid whistle that inspired the Malay word for oriole — kunang-kunang.",w:"Black-naped_oriole"},
-  {n:"Spotted Dove",s:"Spilopelia chinensis",fmin:200,fmax:1500,fdom:600,r:["as","au"],
+  {n:"Black-naped Oriole",s:"Oriolus chinensis",fmin:1000,fmax:5000,fdom:2000,r:["as"],t:"w",nr:[2,5],c:"m",cf:"m",
+   h:"Forest, parks, and gardens across East and Southeast Asia; some winter in India.",
+   f:"Its rich, liquid whistle carries far; Malay speakers call it burung kunyit, the turmeric bird.",w:"Black-naped_oriole"},
+  {n:"Spotted Dove",s:"Spilopelia chinensis",fmin:200,fmax:1500,fdom:600,r:["as","au"],t:"h",nr:[1,3],c:"m",cf:"m",sy:["Streptopelia chinensis","Spilopelia suratensis"],
    h:"Open woodland, farmland, parks, and gardens across Asia and introduced widely.",
    f:"Its cooing has a distinctive three-syllable pattern; introduced populations thrived in Hawaii and California.",w:"Spotted_dove"},
-  {n:"White-bellied Sea Eagle",s:"Haliaeetus leucogaster",fmin:300,fmax:2500,fdom:900,r:["as","au"],
+  {n:"White-bellied Sea Eagle",s:"Haliaeetus leucogaster",fmin:300,fmax:2500,fdom:900,r:["as","au"],t:"h",nr:[2,5],c:"m",cf:"m",sy:["Icthyophaga leucogaster"],
    h:"Coastlines, large rivers, and lakes from India to Australia.",
    f:"Pairs duet with loud, goose-like honks; mates for life and reuse the same nest for decades.",w:"White-bellied_sea_eagle"},
-  {n:"Red Junglefowl",s:"Gallus gallus",fmin:200,fmax:2500,fdom:600,r:["as"],
+  {n:"Red Junglefowl",s:"Gallus gallus",fmin:200,fmax:2500,fdom:600,r:["as"],t:"h",nr:[2,4],c:"m",cf:"l",
    h:"Tropical and subtropical forest in South and Southeast Asia.",
-   f:"The ancestor of all domestic chickens; its crow was selectively shortened by humans over 8,000 years.",w:"Red_junglefowl"},
-  {n:"Asian Paradise Flycatcher",s:"Terpsiphone paradisi",fmin:2000,fmax:9000,fdom:5500,r:["as"],
-   h:"Dense forest and woodland across South and Southeast Asia.",
-   f:"Males grow tail streamers twice their body length during breeding; white and rufous morphs coexist.",w:"Asian_paradise_flycatcher"},
-  {n:"White-rumped Shama",s:"Copsychus malabaricus",fmin:1500,fmax:8000,fdom:4000,r:["as"],
-   h:"Dense forest undergrowth in South and Southeast Asia.",
+   f:"The ancestor of all domestic chickens; its wild crow is short and clipped, while some breeds were bred for very long crows.",w:"Red_junglefowl"},
+  {n:"Indian Paradise Flycatcher",s:"Terpsiphone paradisi",fmin:2000,fmax:9000,fdom:5500,r:["as"],t:"w",nr:[3,7],c:"l",cf:"l",
+   h:"Forest, woodland, and wooded gardens from Central Asia across the Indian subcontinent.",
+   f:"Adult males trail ribbon-like tail streamers longer than their body; white and rufous morphs coexist.",w:"Indian_paradise_flycatcher"},
+  {n:"White-rumped Shama",s:"Copsychus malabaricus",fmin:1500,fmax:8000,fdom:4000,r:["as"],t:"c",nr:[3,8],c:"h",cf:"m",sy:["Kittacincla malabarica"],
+   h:"Dense forest undergrowth in South and Southeast Asia; introduced to Hawaii.",
    f:"Considered one of Asia's finest songbirds; cage-bird competitions judge its song length and variety.",w:"White-rumped_shama"},
-  {n:"Coppersmith Barbet",s:"Psilopogon haemacephalus",fmin:1000,fmax:4000,fdom:2000,r:["as"],
+  {n:"Coppersmith Barbet",s:"Psilopogon haemacephalus",fmin:800,fmax:2000,fdom:1200,r:["as"],t:"w",nr:[1.5,3],c:"h",cf:"m",sy:["Megalaima haemacephala"],
    h:"Open woodland, gardens, and parks across South and Southeast Asia.",
    f:"Named for its monotonous tuk-tuk-tuk call resembling a coppersmith's hammer — repeated for minutes.",w:"Coppersmith_barbet"},
   // Africa
-  {n:"African Fish Eagle",s:"Haliaeetus vocifer",fmin:300,fmax:2000,fdom:800,r:["af"],
+  {n:"African Fish Eagle",s:"Haliaeetus vocifer",fmin:500,fmax:4000,fdom:1300,r:["af"],t:"h",nr:[2,5],c:"m",cf:"m",sy:["Icthyophaga vocifer"],
    h:"Large water bodies — lakes, rivers, reservoirs — across sub-Saharan Africa.",
    f:"Its cry is so evocative it's called the voice of Africa; the national bird of four countries.",w:"African_fish_eagle"},
-  {n:"Hadada Ibis",s:"Bostrychia hagedash",fmin:300,fmax:1500,fdom:700,r:["af"],
+  {n:"Hadada Ibis",s:"Bostrychia hagedash",fmin:300,fmax:1500,fdom:700,r:["af"],t:"h",nr:[2,4],c:"m",cf:"l",
    h:"Suburban gardens, parks, and wetlands across sub-Saharan Africa.",
    f:"Its ear-splitting ha-da-dah! call on take-off serves as a natural alarm clock in African suburbs.",w:"Hadada_ibis"},
-  {n:"Cape Turtle Dove",s:"Streptopelia capicola",fmin:300,fmax:1200,fdom:600,r:["af"],
+  {n:"Cape Turtle Dove",s:"Streptopelia capicola",fmin:300,fmax:1200,fdom:600,r:["af"],t:"h",nr:[1.5,3],c:"m",cf:"m",
    h:"Dry woodland, savanna, and suburban gardens across eastern and southern Africa.",
-   f:"Its coo sounds like work harder, work harder to Afrikaners, giving it the name Werk-harder.",w:"Cape_turtle_dove"},
-  {n:"Fork-tailed Drongo",s:"Dicrurus adsimilis",fmin:1200,fmax:6500,fdom:3000,r:["af"],
+   f:"Its endlessly repeated three-note coo is rendered work-harder or how's-father — a defining sound of the bushveld.",w:"Ring-necked_dove"},
+  {n:"Fork-tailed Drongo",s:"Dicrurus adsimilis",fmin:1200,fmax:6500,fdom:3000,r:["af"],t:"c",nr:[2,6],c:"m",cf:"m",
    h:"Open woodland, savanna, and farmland across sub-Saharan Africa.",
    f:"Mimics false alarm calls of meerkats and other animals to steal their food — a rare deceptive mimic.",w:"Fork-tailed_drongo"},
-  {n:"Cape Robin-Chat",s:"Cossypha caffra",fmin:2000,fmax:8500,fdom:4500,r:["af"],
+  {n:"Cape Robin-Chat",s:"Cossypha caffra",fmin:2000,fmax:8500,fdom:4500,r:["af"],t:"c",nr:[3,7],c:"m",cf:"l",
    h:"Forest edges, gardens, and fynbos scrub in southern Africa.",
    f:"One of the first birds to sing before dawn and the last to fall silent at dusk.",w:"Cape_robin-chat"},
-  {n:"African Grey Parrot",s:"Psittacus erithacus",fmin:600,fmax:4000,fdom:1500,r:["af"],
+  {n:"African Grey Parrot",s:"Psittacus erithacus",fmin:600,fmax:4000,fdom:1500,r:["af"],t:"n",nr:[1,4],c:"l",cf:"l",
    h:"Dense lowland rainforest and forest edges in central and west Africa.",
    f:"Alex, a famous African Grey, could identify 50 objects, 7 colours, and understood the concept of zero.",w:"Grey_parrot"},
-  {n:"Village Weaver",s:"Ploceus cucullatus",fmin:1000,fmax:7000,fdom:3000,r:["af"],
-   h:"Woodland, savanna, and farmland across sub-Saharan Africa; often near human settlements.",
+  {n:"Village Weaver",s:"Ploceus cucullatus",fmin:1000,fmax:7000,fdom:3000,r:["af","na"],t:"c",nr:[5,12],c:"m",cf:"m",
+   h:"Woodland, savanna, and farmland across sub-Saharan Africa, often near settlements; introduced to Hispaniola.",
    f:"Males build intricate woven nests and must pass a female quality inspection — rejected nests are torn down.",w:"Village_weaver"},
-  {n:"Pied Crow",s:"Corvus albus",fmin:300,fmax:3500,fdom:1200,r:["af"],
+  {n:"Pied Crow",s:"Corvus albus",fmin:300,fmax:3500,fdom:1200,r:["af"],t:"n",nr:[1,3],c:"m",cf:"m",
    h:"Open country, savanna, coastlines, and cities across sub-Saharan Africa.",
    f:"One of Africa's most adaptable birds; thrives near humans and has learned to open rubbish bins.",w:"Pied_crow"},
-  {n:"Lilac-breasted Roller",s:"Coracias caudatus",fmin:500,fmax:4500,fdom:1500,r:["af"],
+  {n:"Lilac-breasted Roller",s:"Coracias caudatus",fmin:500,fmax:4500,fdom:1500,r:["af"],t:"n",nr:[2,6],c:"m",cf:"l",
    h:"Open woodland and savanna in eastern and southern Africa.",
    f:"Named for its spectacular rolling aerial display; its 8-colour plumage is one of the most vivid in Africa.",w:"Lilac-breasted_roller"},
-  {n:"Red-billed Quelea",s:"Quelea quelea",fmin:2000,fmax:8500,fdom:5000,r:["af"],
+  {n:"Red-billed Quelea",s:"Quelea quelea",fmin:2000,fmax:8500,fdom:5000,r:["af"],t:"n",nr:[6,15],c:"l",cf:"l",
    h:"Dry savanna, grassland, and farmland across sub-Saharan Africa.",
    f:"The world's most abundant wild bird — flocks of millions darken the sky and strip crops in minutes.",w:"Red-billed_quelea"},
-  {n:"Hamerkop",s:"Scopus umbretta",fmin:300,fmax:2500,fdom:800,r:["af"],
+  {n:"Hamerkop",s:"Scopus umbretta",fmin:300,fmax:2500,fdom:800,r:["af","as"],t:"h",nr:[3,8],c:"l",cf:"l",
    h:"Wetlands, slow rivers, and lake margins across sub-Saharan Africa and Madagascar.",
    f:"Builds the largest roofed nest of any bird — a haystack of sticks up to 1.5 m wide weighing 50 kg.",w:"Hamerkop"},
-  {n:"Southern Yellow-billed Hornbill",s:"Tockus leucomelas",fmin:600,fmax:4000,fdom:1800,r:["af"],
+  {n:"Southern Yellow-billed Hornbill",s:"Tockus leucomelas",fmin:600,fmax:4000,fdom:1000,r:["af"],t:"h",nr:[3,8],c:"m",cf:"m",
    h:"Dry thornveld and savanna in southern Africa.",
    f:"The 'flying banana' of the bush; females seal themselves inside tree cavities to nest, fed by the male.",w:"Southern_yellow-billed_hornbill"},
   // South America
-  {n:"Rufous-bellied Thrush",s:"Turdus rufiventris",fmin:1200,fmax:7000,fdom:3500,r:["sa"],
+  {n:"Rufous-bellied Thrush",s:"Turdus rufiventris",fmin:1200,fmax:7000,fdom:3500,r:["sa"],t:"w",nr:[2,5],c:"m",cf:"m",
    h:"Forest, parks, and gardens across central and eastern South America.",
    f:"The national bird of Brazil; its rich song is one of the most recognised sounds of Brazilian cities.",w:"Rufous-bellied_thrush"},
-  {n:"Great Kiskadee",s:"Pitangus sulphuratus",fmin:1000,fmax:5500,fdom:2500,r:["sa","na"],
+  {n:"Great Kiskadee",s:"Pitangus sulphuratus",fmin:1000,fmax:5500,fdom:2500,r:["sa","na"],t:"h",nr:[2,4],c:"m",cf:"m",
    h:"Open woodland, forest edges, and suburban areas from Texas through South America.",
    f:"Its name is a phonetic rendering of its call kis-ka-dee; it will dive into water to catch small fish.",w:"Great_kiskadee"},
-  {n:"Toco Toucan",s:"Ramphastos toco",fmin:600,fmax:4000,fdom:1500,r:["sa"],
+  {n:"Toco Toucan",s:"Ramphastos toco",fmin:300,fmax:4000,fdom:800,r:["sa"],t:"n",nr:[0.5,2],c:"m",cf:"m",
    h:"Open woodland, forest edges, and palm groves in central South America.",
    f:"Its enormous bill is mainly hollow and acts as a thermoregulator, radiating heat to cool the bird.",w:"Toco_toucan"},
-  {n:"Rufous Hummingbird",s:"Selasphorus rufus",fmin:400,fmax:2500,fdom:1000,r:["na","sa"],
+  {n:"Rufous Hummingbird",s:"Selasphorus rufus",fmin:2000,fmax:10000,fdom:5000,r:["na"],t:"n",nr:[3,8],c:"m",cf:"m",
    h:"Open areas, forest edges, and mountain meadows in western North America.",
    f:"Makes one of the longest migrations relative to body size — 6,400 km each way.",w:"Rufous_hummingbird"},
-  {n:"Tropical Kingbird",s:"Tyrannus melancholicus",fmin:1500,fmax:7000,fdom:3500,r:["sa","na"],
+  {n:"Tropical Kingbird",s:"Tyrannus melancholicus",fmin:1500,fmax:7000,fdom:3500,r:["sa","na"],t:"t",nr:[6,14],c:"m",cf:"l",
    h:"Open and semi-open habitats, forest edges, and urban parks from Mexico to Argentina.",
    f:"One of the most widespread flycatchers in the Americas; aggressively chases hawks much larger than itself.",w:"Tropical_kingbird"},
-  {n:"Rufous-collared Sparrow",s:"Zonotrichia capensis",fmin:2000,fmax:9000,fdom:5000,r:["sa"],
+  {n:"Rufous-collared Sparrow",s:"Zonotrichia capensis",fmin:2000,fmax:9000,fdom:5000,r:["sa","na"],t:"w",nr:[2,15],c:"m",cf:"m",
    h:"Open habitats, gardens, and farmland across Central and South America.",
    f:"Has distinct regional song dialects — populations just kilometres apart may sing completely differently.",w:"Rufous-collared_sparrow"},
-  {n:"Screaming Piha",s:"Lipaugus vociferans",fmin:800,fmax:5000,fdom:2200,r:["sa"],
+  {n:"Screaming Piha",s:"Lipaugus vociferans",fmin:800,fmax:5000,fdom:2200,r:["sa"],t:"w",nr:[1.5,3],c:"h",cf:"l",
    h:"Lowland Amazonian rainforest in South America.",
    f:"Its piercingly loud wheee-wheee-wheeeoo dominates the Amazon soundscape; audible from 500+ metres.",w:"Screaming_piha"},
-  {n:"Amazonian Motmot",s:"Momotus momota",fmin:400,fmax:2500,fdom:1000,r:["sa"],
+  {n:"Amazonian Motmot",s:"Momotus momota",fmin:300,fmax:1200,fdom:500,r:["sa"],t:"w",nr:[1,3],c:"m",cf:"m",
    h:"Humid forest and forest edges across Amazonia.",
-   f:"Preens its racket-shaped tail tips into a pendulum shape used in complex anti-predator signals.",w:"Amazonian_motmot"},
-  {n:"Andean Cock-of-the-rock",s:"Rupicola peruvianus",fmin:600,fmax:4500,fdom:1800,r:["sa"],
+   f:"Wags its racket-tipped tail like a pendulum, a signal thought to tell predators they have been spotted.",w:"Amazonian_motmot"},
+  {n:"Andean Cock-of-the-rock",s:"Rupicola peruvianus",fmin:600,fmax:4500,fdom:1800,r:["sa"],t:"n",nr:[1,3],c:"m",cf:"l",
    h:"Montane cloud forest along the Andes, usually near rocky outcrops.",
    f:"Males display at communal leks where dozens compete in elaborate bowing dances for female choice.",w:"Andean_cock-of-the-rock"},
   // Cosmopolitan
-  {n:"House Sparrow",s:"Passer domesticus",fmin:1200,fmax:6500,fdom:3000,r:["na","eu","as","au","af","sa"],
+  {n:"House Sparrow",s:"Passer domesticus",fmin:1200,fmax:6500,fdom:3000,r:["na","eu","as","au","af","sa"],t:"h",nr:[1,4],c:"m",cf:"m",
    h:"Towns and cities on every inhabited continent — one of the most widespread birds on Earth.",
-   f:"In New York, 8 birds released in 1852 became millions within decades; now found worldwide.",w:"House_sparrow"},
-  {n:"Rock Pigeon",s:"Columba livia",fmin:100,fmax:800,fdom:350,r:["na","eu","as","au","af","sa"],
+   f:"A few dozen released in Brooklyn in 1851–52 multiplied into millions across North America within decades.",w:"House_sparrow"},
+  {n:"Rock Pigeon",s:"Columba livia",fmin:100,fmax:800,fdom:350,r:["na","eu","as","au","af","sa"],t:"h",nr:[1,3],c:"m",cf:"m",
    h:"Cities, towns, and rocky cliffs worldwide — the world's oldest domesticated bird.",
-   f:"Can navigate home from 2,000 km away; its magnetic compass is in tiny iron beads in its beak.",w:"Rock_dove"},
-  {n:"Common Raven",s:"Corvus corax",fmin:300,fmax:2500,fdom:1000,r:["na","eu","as"],
+   f:"Can home from over 1,000 km away; in lab tests pigeons even learned to tell Monet paintings from Picasso's.",w:"Rock_dove"},
+  {n:"Common Raven",s:"Corvus corax",fmin:300,fmax:2500,fdom:1000,r:["na","eu","as","af"],t:"h",nr:[1,3],c:"m",cf:"m",
    h:"Wilderness to suburban areas across the Northern Hemisphere.",
    f:"Ravens play — surfing on air currents, sliding down snowy roofs — which is extremely rare in birds.",w:"Common_raven"},
-  {n:"Peregrine Falcon",s:"Falco peregrinus",fmin:400,fmax:3000,fdom:1200,r:["na","eu","as","au","af","sa"],
+  {n:"Peregrine Falcon",s:"Falco peregrinus",fmin:800,fmax:6000,fdom:1800,r:["na","eu","as","au","af","sa"],t:"n",nr:[3,6],c:"m",cf:"m",
    h:"Open habitat near cliff faces, tall buildings, and coastlines worldwide.",
    f:"The fastest animal on Earth — dives at over 320 km/h; found on every continent except Antarctica.",w:"Peregrine_falcon"},
-  {n:"Osprey",s:"Pandion haliaetus",fmin:1000,fmax:5000,fdom:2500,r:["na","eu","as","au","af"],
+  {n:"Osprey",s:"Pandion haliaetus",fmin:1000,fmax:5000,fdom:2500,r:["na","eu","as","au","af","sa"],t:"w",nr:[2,5],c:"m",cf:"m",sy:["Pandion cristatus"],
    h:"Lakes, rivers, and coasts on every continent except Antarctica.",
    f:"Has a reversible outer toe and spiny barbed pads to grip slippery fish.",w:"Osprey"},
-  {n:"Arctic Tern",s:"Sterna paradisaea",fmin:1000,fmax:6000,fdom:3000,r:["na","eu"],
+  {n:"Arctic Tern",s:"Sterna paradisaea",fmin:1000,fmax:6000,fdom:3000,r:["na","eu","as","af","sa"],t:"n",nr:[1,4],c:"m",cf:"m",
    h:"Arctic tundra in summer; Antarctic waters in winter — the world's longest migration.",
    f:"Travels up to 90,000 km per year — three round trips to the Moon in a lifetime.",w:"Arctic_tern"},
-  {n:"White Stork",s:"Ciconia ciconia",fmin:100,fmax:1500,fdom:400,r:["eu","as","af"],
+  {n:"White Stork",s:"Ciconia ciconia",fmin:200,fmax:5000,fdom:1500,r:["eu","as","af"],t:"p",nr:[8,20],c:"m",cf:"m",
    h:"Open farmland, meadows, and wetlands in Europe and Asia; winters in Africa.",
    f:"Bill-clattering replaces vocalisation as adults have no syrinx voice — pairs perform loud mutual displays.",w:"White_stork"},
-  {n:"Black Kite",s:"Milvus migrans",fmin:300,fmax:4000,fdom:1200,r:["eu","as","af","au"],
+  {n:"Black Kite",s:"Milvus migrans",fmin:1000,fmax:4500,fdom:2200,r:["eu","as","af","au"],t:"w",nr:[6,12],c:"m",cf:"m",sy:["Milvus aegyptius"],
    h:"Open country, rivers, and cities across Europe, Asia, Africa, and Australia.",
-   f:"The world's most abundant raptor; forms roosts of millions near Indian cities — stealing food from stalls.",w:"Black_kite"},
-  {n:"Little Owl",s:"Athene noctua",fmin:400,fmax:3000,fdom:1000,r:["eu","as","af"],
-   h:"Open farmland, orchards, quarries, and semi-desert across Europe, Asia, and North Africa.",
+   f:"Possibly the world's most numerous raptor; in Indian cities it swoops to snatch food from stalls and hands.",w:"Black_kite"},
+  {n:"Little Owl",s:"Athene noctua",fmin:400,fmax:2200,fdom:1000,r:["eu","as","af","au"],t:"w",nr:[0.2,0.5],c:"m",cf:"m",
+   h:"Open farmland, orchards, quarries, and semi-desert across Europe, Asia, and North Africa; introduced to New Zealand.",
    f:"Introduced to England in the 19th century; bobs its head comically when alarmed to gauge distance.",w:"Little_owl"},
 
   // ── Expanded coverage — North America ──
-  {n:"Tufted Titmouse",s:"Baeolophus bicolor",fmin:1500,fmax:6000,fdom:3200,r:["na"],
+  {n:"Tufted Titmouse",s:"Baeolophus bicolor",fmin:1500,fmax:6000,fdom:3200,r:["na"],t:"w",nr:[3,7],c:"h",cf:"m",sy:["Parus bicolor"],
    h:"Deciduous woodlands, parks, and feeders across the eastern United States.",
    f:"Its clear peter-peter-peter whistle is one of the most persistent sounds of eastern woods.",w:"Tufted_titmouse"},
-  {n:"White-breasted Nuthatch",s:"Sitta carolinensis",fmin:1000,fmax:4500,fdom:2200,r:["na"],
+  {n:"White-breasted Nuthatch",s:"Sitta carolinensis",fmin:1000,fmax:4500,fdom:2200,r:["na"],t:"h",nr:[5,10],c:"m",cf:"m",
    h:"Mature deciduous and mixed forests, woodlots, and suburbs across North America.",
    f:"Walks headfirst down tree trunks — its nasal yank-yank is a classic winter-woods call.",w:"White-breasted_nuthatch"},
-  {n:"Red-bellied Woodpecker",s:"Melanerpes carolinus",fmin:600,fmax:4000,fdom:1600,r:["na"],
+  {n:"Red-bellied Woodpecker",s:"Melanerpes carolinus",fmin:600,fmax:4000,fdom:1600,r:["na"],t:"n",nr:[0.5,2],c:"l",cf:"m",
    h:"Forests, woodlots, and suburban yards across the eastern United States.",
    f:"Can stick out its tongue nearly 5 cm past its bill to spear prey deep in bark crevices.",w:"Red-bellied_woodpecker"},
-  {n:"Northern Flicker",s:"Colaptes auratus",fmin:800,fmax:4500,fdom:2000,r:["na"],
+  {n:"Northern Flicker",s:"Colaptes auratus",fmin:800,fmax:4500,fdom:2000,r:["na"],t:"t",nr:[6,9],c:"m",cf:"m",
    h:"Open woods, forest edges, parks, and suburbs across North America.",
    f:"A woodpecker that feeds mostly on the ground, hammering into anthills for its favourite food.",w:"Northern_flicker"},
-  {n:"Pileated Woodpecker",s:"Dryocopus pileatus",fmin:600,fmax:3500,fdom:1600,r:["na"],
+  {n:"Pileated Woodpecker",s:"Dryocopus pileatus",fmin:600,fmax:3500,fdom:1600,r:["na"],t:"h",nr:[5,8],c:"m",cf:"m",sy:["Hylatomus pileatus"],
    h:"Mature forests with large dead trees across North America.",
    f:"Its rectangular excavations are so deep they can cause small trees to snap in half.",w:"Pileated_woodpecker"},
-  {n:"Eastern Phoebe",s:"Sayornis phoebe",fmin:1500,fmax:6000,fdom:3200,r:["na"],
+  {n:"Eastern Phoebe",s:"Sayornis phoebe",fmin:2500,fmax:7000,fdom:4000,r:["na"],t:"n",nr:[1,3],c:"m",cf:"m",
    h:"Woodland edges near water, bridges, and farm buildings in eastern North America.",
    f:"In 1804 it became the first banded bird in North America, thanks to John James Audubon.",w:"Eastern_phoebe"},
-  {n:"Eastern Wood-Pewee",s:"Contopus virens",fmin:2000,fmax:7000,fdom:4000,r:["na"],
+  {n:"Eastern Wood-Pewee",s:"Contopus virens",fmin:2000,fmax:7000,fdom:4000,r:["na","sa"],t:"w",nr:[0.3,1],c:"h",cf:"m",
    h:"Deciduous and mixed forest canopy in eastern North America.",
    f:"Sings its plaintive pee-a-wee well into the heat of midday when most birds fall silent.",w:"Eastern_wood_pewee"},
-  {n:"Chipping Sparrow",s:"Spizella passerina",fmin:3500,fmax:9000,fdom:6000,r:["na"],
+  {n:"Chipping Sparrow",s:"Spizella passerina",fmin:3500,fmax:9000,fdom:6000,r:["na"],t:"t",nr:[10,20],c:"h",cf:"h",
    h:"Open woodlands, lawns, and gardens across North America.",
    f:"Its long dry trill is often mistaken for an insect or a distant sprinkler.",w:"Chipping_sparrow"},
-  {n:"White-crowned Sparrow",s:"Zonotrichia leucophrys",fmin:2000,fmax:8000,fdom:4200,r:["na"],
+  {n:"White-crowned Sparrow",s:"Zonotrichia leucophrys",fmin:2000,fmax:8000,fdom:4200,r:["na"],t:"c",nr:[3,10],c:"m",cf:"m",
    h:"Brushy edges, tundra scrub, and weedy fields across North America.",
-   f:"Can stay awake and migrating for two weeks straight, a feat studied for human sleep research.",w:"White-crowned_sparrow"},
-  {n:"Tree Swallow",s:"Tachycineta bicolor",fmin:2000,fmax:8000,fdom:4500,r:["na"],
+   f:"During migration it cuts its sleep by about two-thirds without ill effect — studied for clues to human sleep.",w:"White-crowned_sparrow"},
+  {n:"Tree Swallow",s:"Tachycineta bicolor",fmin:2000,fmax:8000,fdom:4500,r:["na"],t:"c",nr:[3,8],c:"m",cf:"m",
    h:"Open fields and wetlands near nest boxes and dead trees across North America.",
    f:"Lines its nest with feathers, and will chase floating feathers in playful mid-air games.",w:"Tree_swallow"},
-  {n:"Purple Martin",s:"Progne subis",fmin:1500,fmax:7000,fdom:3200,r:["na"],
+  {n:"Purple Martin",s:"Progne subis",fmin:1500,fmax:7000,fdom:3200,r:["na","sa"],t:"c",nr:[4,10],c:"h",cf:"l",
    h:"Open areas near human-supplied nest houses across eastern North America.",
    f:"In the East, it now nests almost exclusively in human-provided housing — a cultural tradition centuries old.",w:"Purple_martin"},
-  {n:"Cliff Swallow",s:"Petrochelidon pyrrhonota",fmin:1500,fmax:7000,fdom:3500,r:["na"],
+  {n:"Cliff Swallow",s:"Petrochelidon pyrrhonota",fmin:1500,fmax:7000,fdom:3500,r:["na","sa"],t:"c",nr:[4,10],c:"m",cf:"l",sy:["Hirundo pyrrhonota"],
    h:"Cliffs, bridges, and culverts across North America.",
    f:"The famous swallows of Capistrano; builds gourd-shaped mud nests in dense colonies.",w:"Cliff_swallow"},
-  {n:"Cedar Waxwing",s:"Bombycilla garrulus",fmin:4000,fmax:10000,fdom:7000,r:["na","eu","as"],
+  {n:"Bohemian Waxwing",s:"Bombycilla garrulus",fmin:3500,fmax:8500,fdom:5500,r:["na","eu","as"],t:"t",nr:[15,30],c:"m",cf:"l",
    h:"Boreal forest and berry-rich woodland across the Northern Hemisphere.",
-   f:"The Bohemian Waxwing's high thin trill is so high-pitched many older birders can no longer hear it.",w:"Bohemian_waxwing"},
-  {n:"Brown-headed Cowbird",s:"Molothrus ater",fmin:1000,fmax:11000,fdom:4000,r:["na"],
+   f:"In waxwing winters, when northern berry crops fail, flocks irrupt far south, trilling in buzzy chorus.",w:"Bohemian_waxwing"},
+  {n:"Brown-headed Cowbird",s:"Molothrus ater",fmin:1000,fmax:11000,fdom:4000,r:["na"],t:"c",nr:[3,10],c:"h",cf:"l",
    h:"Fields, forest edges, and suburbs across North America.",
    f:"Lays its eggs in over 220 other species' nests, having never built one of its own.",w:"Brown-headed_cowbird"},
-  {n:"Common Grackle",s:"Quiscalus quiscula",fmin:800,fmax:6000,fdom:2500,r:["na"],
+  {n:"Common Grackle",s:"Quiscalus quiscula",fmin:800,fmax:6000,fdom:2500,r:["na"],t:"n",nr:[1,4],c:"m",cf:"m",
    h:"Open fields, marshes, parks, and towns across North and central North America.",
    f:"Its song is often described as sounding like a rusty gate being forced open.",w:"Common_grackle"},
-  {n:"Mallard",s:"Anas platyrhynchos",fmin:300,fmax:3000,fdom:900,r:["na","eu","as"],
-   h:"Ponds, lakes, rivers, and city parks across the Northern Hemisphere.",
+  {n:"Mallard",s:"Anas platyrhynchos",fmin:300,fmax:3000,fdom:900,r:["na","eu","as","af","au"],t:"h",nr:[2,5],c:"h",cf:"m",
+   h:"Ponds, lakes, rivers, and city parks across the Northern Hemisphere; introduced to Australasia.",
    f:"The classic loud quack is made only by females; males give a quieter raspy call.",w:"Mallard"},
-  {n:"Canada Goose",s:"Branta canadensis",fmin:300,fmax:2500,fdom:800,r:["na","eu"],
-   h:"Lakes, ponds, farm fields, and city parks across North America.",
+  {n:"Canada Goose",s:"Branta canadensis",fmin:300,fmax:2500,fdom:800,r:["na","eu","au"],t:"h",nr:[1,3],c:"h",cf:"m",
+   h:"Lakes, ponds, farm fields, and city parks across North America; introduced to Europe and New Zealand.",
    f:"Migrating flocks fly in a V so each bird drafts the one ahead, saving energy on long journeys.",w:"Canada_goose"},
-  {n:"Wood Duck",s:"Aix sponsa",fmin:500,fmax:3500,fdom:1500,r:["na"],
+  {n:"Wood Duck",s:"Aix sponsa",fmin:500,fmax:3500,fdom:1500,r:["na"],t:"h",nr:[1,3],c:"m",cf:"l",
    h:"Wooded swamps, marshes, and streams across North America.",
    f:"Nests in tree cavities; ducklings leap unharmed from heights of 15 m the day after hatching.",w:"Wood_duck"},
-  {n:"Great Egret",s:"Ardea alba",fmin:300,fmax:2500,fdom:900,r:["na","eu","as","af","au","sa"],
+  {n:"Great Egret",s:"Ardea alba",fmin:300,fmax:2500,fdom:900,r:["na","eu","as","af","au","sa"],t:"n",nr:[1,3],c:"h",cf:"m",sy:["Ardea modesta","Egretta alba","Casmerodius albus"],
    h:"Marshes, ponds, and shorelines on every continent except Antarctica.",
    f:"Its plumes nearly drove it to extinction for the hat trade; it became the symbol of the Audubon Society.",w:"Great_egret"},
-  {n:"Belted Kingfisher",s:"Megaceryle alcyon",fmin:1500,fmax:6000,fdom:3000,r:["na"],
+  {n:"Belted Kingfisher",s:"Megaceryle alcyon",fmin:1500,fmax:6000,fdom:3000,r:["na","sa"],t:"t",nr:[10,20],c:"m",cf:"m",sy:["Ceryle alcyon"],
    h:"Rivers, lakes, and estuaries with clear water across North America.",
    f:"Gives a loud dry rattle as it flies; one of the few birds where the female is more colourful than the male.",w:"Belted_kingfisher"},
-  {n:"American Kestrel",s:"Falco sparverius",fmin:2000,fmax:7000,fdom:4000,r:["na","sa"],
+  {n:"American Kestrel",s:"Falco sparverius",fmin:2000,fmax:7000,fdom:4000,r:["na","sa"],t:"h",nr:[4,8],c:"m",cf:"m",
    h:"Open fields, deserts, and roadsides across the Americas.",
-   f:"North America's smallest falcon; can see ultraviolet, spotting vole urine trails glowing in the grass.",w:"American_kestrel"},
-  {n:"Cooper's Hawk",s:"Accipiter cooperii",fmin:1000,fmax:5000,fdom:2500,r:["na"],
+   f:"North America's smallest falcon; it hovers into the wind over fields and readily nests in boxes.",w:"American_kestrel"},
+  {n:"Cooper's Hawk",s:"Astur cooperii",fmin:1000,fmax:5000,fdom:2500,r:["na"],t:"n",nr:[3,6],c:"m",cf:"m",sy:["Accipiter cooperii"],
    h:"Woodlands and increasingly suburban yards across North America.",
    f:"A bird-hunting specialist now thriving in cities, ambushing pigeons and doves at feeders.",w:"Cooper's_hawk"},
-  {n:"Turkey Vulture",s:"Cathartes aura",fmin:100,fmax:1200,fdom:400,r:["na","sa"],
+  {n:"Turkey Vulture",s:"Cathartes aura",fmin:500,fmax:8000,fdom:3000,r:["na","sa"],t:"n",nr:null,c:"h",cf:"m",
    h:"Open and semi-open country across the Americas.",
-   f:"Nearly voiceless with no syrinx — it can only hiss and grunt; it finds carrion by smell alone.",w:"Turkey_vulture"},
-  {n:"Wild Turkey",s:"Meleagris gallopavo",fmin:100,fmax:2000,fdom:500,r:["na"],
-   h:"Mature forests with clearings and farmland across North America.",
+   f:"Lacks a syrinx, so it can only hiss and grunt; unusually for a bird, it finds carrion largely by smell.",w:"Turkey_vulture"},
+  {n:"Wild Turkey",s:"Meleagris gallopavo",fmin:100,fmax:2000,fdom:500,r:["na","au"],t:"n",nr:[8,15],c:"l",cf:"l",
+   h:"Mature forests with clearings and farmland across North America; introduced to New Zealand.",
    f:"A male's gobble can carry over 1.5 km; Benjamin Franklin admired it over the Bald Eagle.",w:"Wild_turkey"},
-  {n:"Mourning Warbler",s:"Geothlypis philadelphia",fmin:2500,fmax:8000,fdom:4500,r:["na"],
+  {n:"Mourning Warbler",s:"Geothlypis philadelphia",fmin:2500,fmax:8000,fdom:4500,r:["na","sa"],t:"w",nr:[4,8],c:"m",cf:"m",sy:["Oporornis philadelphia"],
    h:"Dense shrubby regrowth and forest clearings in eastern North America.",
    f:"Skulks so persistently in tangled undergrowth that many birders hear it far more often than they see it.",w:"Mourning_warbler"},
-  {n:"Common Yellowthroat",s:"Geothlypis trichas",fmin:2500,fmax:8500,fdom:5000,r:["na"],
+  {n:"Common Yellowthroat",s:"Geothlypis trichas",fmin:2500,fmax:8000,fdom:4200,r:["na"],t:"w",nr:[6,10],c:"m",cf:"m",
    h:"Marshes, wet thickets, and overgrown fields across North America.",
    f:"Its rolling witchety-witchety-witchety song rings out from nearly every North American wetland.",w:"Common_yellowthroat"},
-  {n:"American Redstart",s:"Setophaga ruticilla",fmin:3000,fmax:9500,fdom:6000,r:["na"],
+  {n:"American Redstart",s:"Setophaga ruticilla",fmin:3000,fmax:9500,fdom:6000,r:["na","sa"],t:"w",nr:[4,8],c:"m",cf:"m",
    h:"Second-growth deciduous forest across North America.",
    f:"Flashes its orange tail and wing patches to startle insects into flight, then snaps them up.",w:"American_redstart"},
-  {n:"Scarlet Tanager",s:"Piranga olivacea",fmin:2000,fmax:7000,fdom:3800,r:["na"],
+  {n:"Scarlet Tanager",s:"Piranga olivacea",fmin:2000,fmax:7000,fdom:3800,r:["na","sa"],t:"n",nr:[3,5],c:"m",cf:"m",
    h:"Mature deciduous forest canopy in eastern North America.",
    f:"Its burry robin-like song, often described as a robin with a sore throat, drifts from the treetops.",w:"Scarlet_tanager"},
-  {n:"Rose-breasted Grosbeak",s:"Pheucticus ludovicianus",fmin:1500,fmax:6500,fdom:3500,r:["na"],
+  {n:"Rose-breasted Grosbeak",s:"Pheucticus ludovicianus",fmin:1500,fmax:6500,fdom:3500,r:["na","sa"],t:"w",nr:[4,8],c:"m",cf:"m",
    h:"Deciduous and mixed woodlands of eastern North America.",
    f:"Its rich, warbling song sounds like a robin that has taken opera lessons.",w:"Rose-breasted_grosbeak"},
 
   // ── Expanded coverage — Europe ──
-  {n:"Coal Tit",s:"Periparus ater",fmin:3000,fmax:10000,fdom:6500,r:["eu","as"],
+  {n:"Coal Tit",s:"Periparus ater",fmin:3500,fmax:9000,fdom:6000,r:["eu","as","af"],t:"w",nr:[5,10],c:"m",cf:"m",sy:["Parus ater"],
    h:"Coniferous and mixed woodland across Europe and Asia.",
    f:"Hoards thousands of seeds each autumn, remembering countless hiding spots through winter.",w:"Coal_tit"},
-  {n:"Marsh Tit",s:"Poecile palustris",fmin:2500,fmax:9000,fdom:5500,r:["eu","as"],
+  {n:"Marsh Tit",s:"Poecile palustris",fmin:2500,fmax:9000,fdom:5500,r:["eu","as"],t:"w",nr:[4,9],c:"m",cf:"l",sy:["Parus palustris"],
    h:"Deciduous woodland and old hedgerows across Europe and Asia.",
    f:"Its explosive pitchou call gives it away; nearly identical to the Willow Tit in appearance.",w:"Marsh_tit"},
-  {n:"Nuthatch",s:"Sitta europaea",fmin:1500,fmax:6000,fdom:3000,r:["eu","as"],
+  {n:"Nuthatch",s:"Sitta europaea",fmin:1500,fmax:6000,fdom:3000,r:["eu","as","af"],t:"w",nr:[3,12],c:"m",cf:"m",
    h:"Mature deciduous and mixed woodland across Europe and Asia.",
    f:"Plasters mud around its nest-hole entrance to shrink it to the perfect size.",w:"Eurasian_nuthatch"},
-  {n:"Common Treecreeper",s:"Certhia familiaris",fmin:4000,fmax:10000,fdom:7000,r:["eu","as"],
+  {n:"Common Treecreeper",s:"Certhia familiaris",fmin:4000,fmax:10000,fdom:7000,r:["eu","as"],t:"t",nr:[6,12],c:"m",cf:"m",
    h:"Mature forests across Europe and northern Asia.",
    f:"Spirals up tree trunks probing bark, then flies down to the base of the next tree to start again.",w:"Eurasian_treecreeper"},
-  {n:"Common Redstart",s:"Phoenicurus phoenicurus",fmin:2000,fmax:8000,fdom:4500,r:["eu","as","af"],
+  {n:"Common Redstart",s:"Phoenicurus phoenicurus",fmin:2000,fmax:8000,fdom:4500,r:["eu","as","af"],t:"c",nr:[4,10],c:"m",cf:"m",
    h:"Open woodland, parkland, and heaths across Europe; winters in Africa.",
    f:"Constantly quivers its rusty-red tail, a flash of colour that gives the bird its name.",w:"Common_redstart"},
-  {n:"European Stonechat",s:"Saxicola rubicola",fmin:2500,fmax:8500,fdom:5000,r:["eu","af"],
+  {n:"European Stonechat",s:"Saxicola rubicola",fmin:2500,fmax:8500,fdom:5000,r:["eu","af","as"],t:"c",nr:[6,12],c:"m",cf:"l",sy:["Saxicola torquatus rubicola"],
    h:"Heathland, rough grassland, and coastal scrub across Europe.",
    f:"Its call sounds exactly like two stones being tapped together, giving the bird its name.",w:"European_stonechat"},
-  {n:"Common Whitethroat",s:"Sylvia communis",fmin:2500,fmax:9000,fdom:5000,r:["eu","as","af"],
+  {n:"Common Whitethroat",s:"Curruca communis",fmin:2500,fmax:9000,fdom:5000,r:["eu","as","af"],t:"c",nr:[8,14],c:"m",cf:"l",sy:["Sylvia communis"],
    h:"Scrub, hedgerows, and bramble thickets across Europe; winters in Africa.",
    f:"Delivers its scratchy song from an exposed perch or in a dancing song-flight over the hedge.",w:"Common_whitethroat"},
-  {n:"Willow Warbler",s:"Phylloscopus trochilus",fmin:2500,fmax:8000,fdom:4500,r:["eu","as","af"],
+  {n:"Willow Warbler",s:"Phylloscopus trochilus",fmin:2500,fmax:8000,fdom:4500,r:["eu","as","af"],t:"w",nr:[5,9],c:"h",cf:"m",
    h:"Young birch and willow woodland across northern Europe and Asia.",
    f:"Its wistful descending song is the classic sound of a northern spring; migrates to Africa each winter.",w:"Willow_warbler"},
-  {n:"Sedge Warbler",s:"Acrocephalus schoenobaenus",fmin:2500,fmax:9000,fdom:5000,r:["eu","af"],
+  {n:"Sedge Warbler",s:"Acrocephalus schoenobaenus",fmin:2000,fmax:8500,fdom:4000,r:["eu","af","as"],t:"c",nr:[8,16],c:"h",cf:"l",
    h:"Reedbeds, ditches, and wet scrub across Europe; winters in Africa.",
    f:"No two songs are ever the same; males with the most varied repertoire attract mates fastest.",w:"Sedge_warbler"},
-  {n:"Eurasian Reed Warbler",s:"Acrocephalus scirpaceus",fmin:2000,fmax:8000,fdom:4000,r:["eu","af"],
+  {n:"Eurasian Reed Warbler",s:"Acrocephalus scirpaceus",fmin:2000,fmax:8000,fdom:4000,r:["eu","af","as"],t:"c",nr:[6,12],c:"h",cf:"m",
    h:"Reedbeds across Europe; winters in sub-Saharan Africa.",
    f:"A favourite host of the cuckoo; weaves a deep nest slung between vertical reed stems.",w:"Eurasian_reed_warbler"},
-  {n:"Common Firecrest",s:"Regulus ignicapilla",fmin:5000,fmax:12000,fdom:8500,r:["eu"],
+  {n:"Common Firecrest",s:"Regulus ignicapilla",fmin:5000,fmax:9500,fdom:7000,r:["eu","af"],t:"t",nr:[8,14],c:"m",cf:"m",sy:["Regulus ignicapillus"],
    h:"Coniferous and mixed woodland across Europe.",
    f:"One of Europe's smallest birds; its blazing orange crest gives it its name.",w:"Common_firecrest"},
-  {n:"Willow Tit",s:"Poecile montanus",fmin:2500,fmax:9000,fdom:5500,r:["eu","as"],
+  {n:"Willow Tit",s:"Poecile montanus",fmin:2500,fmax:5500,fdom:3500,r:["eu","as"],t:"w",nr:[2,4],c:"m",cf:"m",sy:["Parus montanus"],
    h:"Damp woodland, willow carr, and conifer forest across Europe and Asia.",
    f:"Excavates its own nest hole in soft rotten wood, unlike its look-alike the Marsh Tit.",w:"Willow_tit"},
-  {n:"Bullfinch",s:"Pyrrhula pyrrhula",fmin:1500,fmax:6000,fdom:3000,r:["eu","as"],
+  {n:"Bullfinch",s:"Pyrrhula pyrrhula",fmin:1500,fmax:3200,fdom:2100,r:["eu","as"],t:"w",nr:[0.3,1],c:"m",cf:"m",
    h:"Woodland edges, orchards, and hedgerows across Europe and Asia.",
    f:"Its soft piping call carries surprisingly far; pairs stay together year-round.",w:"Eurasian_bullfinch"},
-  {n:"Hawfinch",s:"Coccothraustes coccothraustes",fmin:2000,fmax:8000,fdom:4500,r:["eu","as"],
+  {n:"Hawfinch",s:"Coccothraustes coccothraustes",fmin:4500,fmax:9500,fdom:7000,r:["eu","as","af"],t:"n",nr:[1,3],c:"l",cf:"m",
    h:"Mature deciduous woodland with hornbeam and cherry across Europe and Asia.",
    f:"Its massive bill can crack cherry and olive stones with a force of over 45 kg.",w:"Hawfinch"},
-  {n:"Common Redpoll",s:"Acanthis flammea",fmin:2500,fmax:9000,fdom:5000,r:["eu","na","as"],
+  {n:"Common Redpoll",s:"Acanthis flammea",fmin:2500,fmax:9000,fdom:5000,r:["eu","na","as"],t:"t",nr:[8,20],c:"m",cf:"l",sy:["Acanthis hornemanni","Acanthis cabaret","Carduelis flammea"],
    h:"Birch and alder scrub and tundra edges across the far north.",
    f:"Survives −65 °C nights by storing seeds in a throat pouch to digest in a snug snow roost.",w:"Common_redpoll"},
-  {n:"Eurasian Siskin",s:"Spinus spinus",fmin:2500,fmax:9500,fdom:5500,r:["eu","as"],
+  {n:"Eurasian Siskin",s:"Spinus spinus",fmin:2200,fmax:9000,fdom:4500,r:["eu","as"],t:"c",nr:[10,20],c:"m",cf:"l",sy:["Carduelis spinus"],
    h:"Conifer forests and alder-lined streams across Europe and Asia.",
    f:"Its wheezy twittering song ends in a long buzzy descending note like a tiny zip.",w:"Eurasian_siskin"},
-  {n:"Grey Heron",s:"Ardea cinerea",fmin:300,fmax:2500,fdom:900,r:["eu","as","af"],
+  {n:"Grey Heron",s:"Ardea cinerea",fmin:300,fmax:2500,fdom:900,r:["eu","as","af"],t:"n",nr:null,c:"h",cf:"m",
    h:"Rivers, lakes, marshes, and estuaries across Europe, Asia, and Africa.",
    f:"Gives a loud harsh fraaank in flight; stands motionless for long spells before spearing fish.",w:"Grey_heron"},
-  {n:"Common Moorhen",s:"Gallinula chloropus",fmin:800,fmax:5000,fdom:2500,r:["eu","as","af","na","sa"],
-   h:"Ponds, canals, and marshes worldwide.",
+  {n:"Common Moorhen",s:"Gallinula chloropus",fmin:600,fmax:4500,fdom:1800,r:["eu","as","af"],t:"n",nr:null,c:"m",cf:"l",
+   h:"Ponds, canals, and marshes across Europe, Asia, and Africa.",
    f:"Its explosive kurruk call echoes across wetlands; young from an early brood help feed later chicks.",w:"Common_moorhen"},
-  {n:"Eurasian Coot",s:"Fulica atra",fmin:800,fmax:4500,fdom:2200,r:["eu","as","au"],
+  {n:"Common Gallinule",s:"Gallinula galeata",fmin:500,fmax:4000,fdom:1400,r:["na","sa"],t:"h",nr:[3,8],c:"m",cf:"l",sy:["Gallinula chloropus cachinnans","Gallinula chloropus galeata"],
+   h:"Freshwater marshes, ponds, and reedy lake edges across the Americas.",
+   f:"Split from the Common Moorhen in 2011; its descending, chicken-like laughing whinny carries from the reeds.",w:"Common_gallinule"},
+  {n:"Eurasian Coot",s:"Fulica atra",fmin:800,fmax:4500,fdom:2200,r:["eu","as","au","af"],t:"h",nr:null,c:"l",cf:"l",
    h:"Open lakes, reservoirs, and slow rivers across Eurasia and Australia.",
    f:"Fiercely territorial on water, running and splashing across the surface to drive off rivals.",w:"Eurasian_coot"},
-  {n:"Common Kestrel",s:"Falco tinnunculus",fmin:2000,fmax:7000,fdom:4000,r:["eu","as","af"],
+  {n:"Common Kestrel",s:"Falco tinnunculus",fmin:2000,fmax:7000,fdom:4000,r:["eu","as","af"],t:"h",nr:[4,8],c:"m",cf:"m",
    h:"Farmland, motorway verges, and moorland across Europe, Asia, and Africa.",
    f:"Hovers on rapidly beating wings, holding its head perfectly still to spot voles far below.",w:"Common_kestrel"},
-  {n:"Eurasian Sparrowhawk",s:"Accipiter nisus",fmin:1500,fmax:6000,fdom:3000,r:["eu","as","af"],
+  {n:"Eurasian Sparrowhawk",s:"Accipiter nisus",fmin:1500,fmax:6000,fdom:3000,r:["eu","as","af"],t:"h",nr:[4,8],c:"l",cf:"l",
    h:"Woodland and increasingly gardens across Europe, Asia, and North Africa.",
    f:"Threads through hedges and gardens at speed to ambush small birds at feeders.",w:"Eurasian_sparrowhawk"},
-  {n:"Common Buzzard",s:"Buteo buteo",fmin:1000,fmax:5000,fdom:2500,r:["eu","as"],
+  {n:"Common Buzzard",s:"Buteo buteo",fmin:1000,fmax:5000,fdom:2500,r:["eu","as","af"],t:"w",nr:null,c:"l",cf:"m",
    h:"Farmland, woodland edges, and moorland across Europe and Asia.",
    f:"Its far-carrying mewing call, like a cat, is one of the most familiar raptor sounds of Europe.",w:"Common_buzzard"},
-  {n:"European Green Woodpecker",s:"Picus viridis",fmin:800,fmax:4000,fdom:1800,r:["eu"],
+  {n:"European Green Woodpecker",s:"Picus viridis",fmin:800,fmax:4000,fdom:1800,r:["eu","as"],t:"h",nr:[5,8],c:"m",cf:"m",sy:["Picus sharpei"],
    h:"Parkland, orchards, and open woodland across Europe.",
    f:"Its loud laughing yaffle call gives it a folk name; feeds mostly on ants on the ground.",w:"European_green_woodpecker"},
-  {n:"Great Spotted Woodpecker",s:"Dendrocopos major",fmin:800,fmax:4500,fdom:2000,r:["eu","as"],
+  {n:"Great Spotted Woodpecker",s:"Dendrocopos major",fmin:800,fmax:4500,fdom:2000,r:["eu","as","af"],t:"p",nr:[15,25],c:"h",cf:"l",
    h:"Woodland, parks, and gardens across Europe and Asia.",
    f:"Drums up to 40 times per second on resonant dead branches to advertise its territory.",w:"Great_spotted_woodpecker"},
-  {n:"European Bee-eater",s:"Merops apiaster",fmin:800,fmax:4500,fdom:2200,r:["eu","af","as"],
+  {n:"European Bee-eater",s:"Merops apiaster",fmin:800,fmax:4500,fdom:2200,r:["eu","af","as"],t:"w",nr:[1,3],c:"l",cf:"l",
    h:"Open sunny country with sandy banks across southern Europe, Africa, and Asia.",
    f:"Its liquid rolling prruip is often heard before the rainbow-coloured flock is seen overhead.",w:"European_bee-eater"},
-  {n:"Common Redwing",s:"Turdus iliacus",fmin:2000,fmax:8000,fdom:4000,r:["eu","as"],
+  {n:"Common Redwing",s:"Turdus iliacus",fmin:1800,fmax:8000,fdom:3200,r:["eu","as"],t:"c",nr:[6,12],c:"m",cf:"l",
    h:"Northern birch forest in summer; hedgerows and fields in winter across Eurasia.",
    f:"Migrating flocks call to each other on autumn nights with a thin seeh heard high overhead.",w:"Redwing"},
-  {n:"Fieldfare",s:"Turdus pilaris",fmin:1500,fmax:6500,fdom:3000,r:["eu","as"],
+  {n:"Fieldfare",s:"Turdus pilaris",fmin:1500,fmax:6500,fdom:3000,r:["eu","as"],t:"n",nr:[3,7],c:"m",cf:"l",
    h:"Open woodland and farmland; forms large winter flocks across Europe and Asia.",
    f:"Defends berry-laden trees in winter and bombards intruding birds with well-aimed droppings.",w:"Fieldfare"},
 
   // ── Expanded coverage — Asia ──
-  {n:"Japanese Tit",s:"Parus minor",fmin:2500,fmax:9000,fdom:5000,r:["as"],
+  {n:"Japanese Tit",s:"Parus minor",fmin:2200,fmax:8000,fdom:4500,r:["as"],t:"w",nr:[4,8],c:"m",cf:"m",sy:["Parus major minor","Parus cinereus minor"],
    h:"Woodland, parks, and gardens across East Asia.",
    f:"Uses a grammar-like combination of calls, one of the first proven cases of syntax in animals.",w:"Japanese_tit"},
-  {n:"Light-vented Bulbul",s:"Pycnonotus sinensis",fmin:1500,fmax:7000,fdom:3500,r:["as"],
+  {n:"Light-vented Bulbul",s:"Pycnonotus sinensis",fmin:1500,fmax:6000,fdom:2800,r:["as"],t:"w",nr:[3,8],c:"l",cf:"l",
    h:"Gardens, parks, and scrub across eastern China and Southeast Asia.",
    f:"One of the most abundant urban birds of southern China, with a cheerful chattering song.",w:"Light-vented_bulbul"},
-  {n:"Eurasian Tree Sparrow",s:"Passer montanus",fmin:2000,fmax:7500,fdom:4000,r:["as","eu"],
+  {n:"Eurasian Tree Sparrow",s:"Passer montanus",fmin:2000,fmax:7500,fdom:4000,r:["as","eu","au","na"],t:"h",nr:[2,5],c:"m",cf:"m",
    h:"Farmland, villages, and city parks across Eurasia.",
    f:"In much of Asia it replaces the House Sparrow as the common town sparrow.",w:"Eurasian_tree_sparrow"},
-  {n:"Black Drongo",s:"Dicrurus macrocercus",fmin:1200,fmax:6500,fdom:3000,r:["as"],
+  {n:"Black Drongo",s:"Dicrurus macrocercus",fmin:1200,fmax:6500,fdom:3000,r:["as"],t:"c",nr:[2,6],c:"l",cf:"l",
    h:"Open farmland, grassland, and towns across South and Southeast Asia.",
    f:"Fearlessly mobs crows and hawks many times its size; other birds nest nearby for the protection.",w:"Black_drongo"},
-  {n:"Rose-ringed Parakeet",s:"Psittacula krameri",fmin:1500,fmax:7000,fdom:3500,r:["as","af","eu"],
+  {n:"Rose-ringed Parakeet",s:"Psittacula krameri",fmin:1500,fmax:7000,fdom:3500,r:["as","af","eu"],t:"n",nr:[2,5],c:"h",cf:"l",
    h:"Woodland, farmland, and cities across Asia and Africa; feral in many European cities.",
    f:"Screeching flocks now light up city parks from London to Tokyo far from its native range.",w:"Rose-ringed_parakeet"},
-  {n:"Red-vented Bulbul",s:"Pycnonotus cafer",fmin:1500,fmax:7000,fdom:3500,r:["as"],
+  {n:"Red-vented Bulbul",s:"Pycnonotus cafer",fmin:1200,fmax:5000,fdom:2500,r:["as"],t:"w",nr:[2,6],c:"m",cf:"l",
    h:"Gardens, scrub, and farmland across the Indian subcontinent and Southeast Asia.",
    f:"A bold, adaptable bird whose bubbling be-careful call is a constant of South Asian gardens.",w:"Red-vented_bulbul"},
-  {n:"Indian Robin",s:"Copsychus fulicatus",fmin:2000,fmax:8000,fdom:4500,r:["as"],
+  {n:"Indian Robin",s:"Copsychus fulicatus",fmin:2000,fmax:8000,fdom:4500,r:["as"],t:"w",nr:[3,8],c:"l",cf:"l",sy:["Saxicoloides fulicatus"],
    h:"Dry open stony scrub and village edges across the Indian subcontinent.",
    f:"Cocks its tail high over its back to show off chestnut vent feathers while singing.",w:"Indian_robin"},
-  {n:"Purple Sunbird",s:"Cinnyris asiaticus",fmin:3000,fmax:10000,fdom:6000,r:["as"],
+  {n:"Purple Sunbird",s:"Cinnyris asiaticus",fmin:3000,fmax:10000,fdom:6000,r:["as"],t:"t",nr:[6,14],c:"l",cf:"l",sy:["Nectarinia asiatica"],
    h:"Gardens, scrub, and open forest across South and West Asia.",
    f:"Males turn glossy metallic purple-black in breeding season; hovers at flowers like a hummingbird.",w:"Purple_sunbird"},
-  {n:"Jungle Babbler",s:"Argya striata",fmin:1500,fmax:7000,fdom:3500,r:["as"],
+  {n:"Jungle Babbler",s:"Argya striata",fmin:1500,fmax:7000,fdom:3500,r:["as"],t:"n",nr:[5,10],c:"m",cf:"l",sy:["Turdoides striata","Turdoides striatus"],
    h:"Forest, scrub, and gardens across the Indian subcontinent.",
    f:"Travels in noisy gangs of six or so, earning the affectionate nickname Seven Sisters.",w:"Jungle_babbler"},
-  {n:"Vinous-throated Parrotbill",s:"Sinosuthora webbiana",fmin:3000,fmax:10000,fdom:6000,r:["as"],
+  {n:"Vinous-throated Parrotbill",s:"Sinosuthora webbiana",fmin:3000,fmax:10000,fdom:6000,r:["as"],t:"w",nr:[3,8],c:"l",cf:"l",sy:["Paradoxornis webbianus"],
    h:"Reedbeds, scrub, and grassland across East Asia.",
    f:"Tiny and long-tailed, it moves through reeds in restless twittering flocks.",w:"Vinous-throated_parrotbill"},
-  {n:"Azure-winged Magpie",s:"Cyanopica cyanus",fmin:1500,fmax:7000,fdom:3500,r:["as"],
+  {n:"Azure-winged Magpie",s:"Cyanopica cyanus",fmin:1500,fmax:7000,fdom:3500,r:["as"],t:"n",nr:[1,4],c:"m",cf:"l",
    h:"Open woodland, parks, and gardens across East Asia.",
-   f:"Highly social and intelligent; a mirror-image population lives far away in Iberia.",w:"Azure-winged_magpie"},
-  {n:"Oriental Turtle Dove",s:"Streptopelia orientalis",fmin:300,fmax:1200,fdom:550,r:["as"],
+   f:"Highly social and intelligent; its near-identical cousin, the Iberian Magpie, lives far away in Spain and Portugal.",w:"Azure-winged_magpie"},
+  {n:"Oriental Turtle Dove",s:"Streptopelia orientalis",fmin:300,fmax:1200,fdom:550,r:["as"],t:"h",nr:[1,3],c:"m",cf:"m",
    h:"Woodland, farmland, and gardens across Asia.",
    f:"Its soft four-note coo is a familiar background sound of East Asian countryside.",w:"Oriental_turtle_dove"},
-  {n:"Long-tailed Shrike",s:"Lanius schach",fmin:1500,fmax:7500,fdom:3800,r:["as"],
+  {n:"Long-tailed Shrike",s:"Lanius schach",fmin:1500,fmax:7500,fdom:3800,r:["as","au"],t:"c",nr:[4,10],c:"l",cf:"l",
    h:"Open scrub, farmland, and grassland across Asia.",
    f:"Impales prey on thorns as a larder; an accomplished mimic of other birds' calls.",w:"Long-tailed_shrike"},
 
   // ── Expanded coverage — Africa ──
-  {n:"Superb Starling",s:"Lamprotornis superbus",fmin:1500,fmax:8000,fdom:4000,r:["af"],
+  {n:"Superb Starling",s:"Lamprotornis superbus",fmin:1500,fmax:8000,fdom:4000,r:["af"],t:"c",nr:[6,12],c:"m",cf:"l",sy:["Spreo superbus"],
    h:"Savanna, farmland, and lodges across East Africa.",
    f:"Its dazzling metallic blue and orange plumage makes it one of the most photographed African birds.",w:"Superb_starling"},
-  {n:"Southern Masked Weaver",s:"Ploceus velatus",fmin:1500,fmax:8000,fdom:4000,r:["af"],
+  {n:"Southern Masked Weaver",s:"Ploceus velatus",fmin:1500,fmax:8000,fdom:4000,r:["af"],t:"n",nr:[6,15],c:"m",cf:"l",
    h:"Savanna, woodland, and gardens across southern Africa.",
    f:"The male weaves a fresh nest for each female, unpicking it entirely if she rejects it.",w:"Southern_masked_weaver"},
-  {n:"Laughing Dove",s:"Spilopelia senegalensis",fmin:300,fmax:1500,fdom:650,r:["af","as"],
+  {n:"Laughing Dove",s:"Spilopelia senegalensis",fmin:300,fmax:1500,fdom:650,r:["af","as","au"],t:"w",nr:[3,6],c:"m",cf:"m",sy:["Streptopelia senegalensis"],
    h:"Towns, gardens, and dry scrub across Africa and southern Asia.",
    f:"Its soft chuckling coo is one of the most familiar garden sounds across Africa and the Middle East.",w:"Laughing_dove"},
-  {n:"Speckled Mousebird",s:"Colius striatus",fmin:1500,fmax:7000,fdom:3500,r:["af"],
+  {n:"Speckled Mousebird",s:"Colius striatus",fmin:1500,fmax:7000,fdom:3500,r:["af"],t:"n",nr:[3,8],c:"l",cf:"l",
    h:"Scrub, gardens, and forest edges across sub-Saharan Africa.",
    f:"Clambers through bushes like a mouse and huddles in tight bunches to keep warm.",w:"Speckled_mousebird"},
-  {n:"Cape Sparrow",s:"Passer melanurus",fmin:2000,fmax:7500,fdom:4000,r:["af"],
+  {n:"Cape Sparrow",s:"Passer melanurus",fmin:2000,fmax:7500,fdom:4000,r:["af"],t:"h",nr:[2,5],c:"l",cf:"l",
    h:"Towns, farmland, and semi-desert across southern Africa.",
    f:"Its rich chirping song is more musical than the familiar House Sparrow's simple chirp.",w:"Cape_sparrow"},
-  {n:"African Paradise Flycatcher",s:"Terpsiphone viridis",fmin:2000,fmax:8500,fdom:4500,r:["af"],
+  {n:"African Paradise Flycatcher",s:"Terpsiphone viridis",fmin:2000,fmax:8500,fdom:4500,r:["af","as"],t:"w",nr:[4,8],c:"l",cf:"l",
    h:"Woodland, riverine forest, and gardens across sub-Saharan Africa.",
    f:"Breeding males trail streamer tails twice their body length as they dance after insects.",w:"African_paradise_flycatcher"},
-  {n:"Grey Go-away-bird",s:"Corythaixoides concolor",fmin:500,fmax:3500,fdom:1400,r:["af"],
+  {n:"Grey Go-away-bird",s:"Crinifer concolor",fmin:500,fmax:3500,fdom:1400,r:["af"],t:"h",nr:[0.5,2],c:"m",cf:"m",sy:["Corythaixoides concolor"],
    h:"Dry savanna and bushveld across southern Africa.",
    f:"Its drawn-out nasal g-way call, sounding like go away, warns game of approaching danger.",w:"Grey_go-away-bird"},
-  {n:"Yellow-billed Kite",s:"Milvus aegyptius",fmin:1500,fmax:6500,fdom:3000,r:["af"],
+  {n:"Yellow-billed Kite",s:"Milvus aegyptius",fmin:1500,fmax:6500,fdom:3000,r:["af","as"],t:"t",nr:[8,16],c:"l",cf:"l",sy:["Milvus migrans aegyptius","Milvus migrans parasitus"],
    h:"Open country, wetlands, and towns across sub-Saharan Africa.",
    f:"Gives a distinctive whinnying whistle as it wheels over African towns scavenging scraps.",w:"Yellow-billed_kite"},
-  {n:"Helmeted Guineafowl",s:"Numida meleagris",fmin:500,fmax:4000,fdom:1800,r:["af"],
+  {n:"Helmeted Guineafowl",s:"Numida meleagris",fmin:500,fmax:4000,fdom:1800,r:["af"],t:"n",nr:[3,8],c:"m",cf:"l",
    h:"Savanna, farmland, and grassland across sub-Saharan Africa.",
    f:"Flocks erupt in a deafening clattering chorus at any disturbance, a natural alarm system.",w:"Helmeted_guineafowl"},
-  {n:"Crowned Lapwing",s:"Vanellus coronatus",fmin:1000,fmax:5500,fdom:2800,r:["af"],
+  {n:"Crowned Lapwing",s:"Vanellus coronatus",fmin:1000,fmax:5500,fdom:2800,r:["af"],t:"h",nr:[2,6],c:"m",cf:"l",
    h:"Short dry grassland and overgrazed fields across eastern and southern Africa.",
    f:"Noisy and bold, it dive-bombs intruders near its nest with piercing ringing calls.",w:"Crowned_lapwing"},
 
   // ── Expanded coverage — Australia & New Zealand ──
-  {n:"Australian Raven",s:"Corvus coronoides",fmin:500,fmax:3500,fdom:1400,r:["au"],
+  {n:"Australian Raven",s:"Corvus coronoides",fmin:500,fmax:3500,fdom:1400,r:["au"],t:"h",nr:[1,3],c:"m",cf:"m",
    h:"Open woodland, farmland, and cities across eastern and southern Australia.",
    f:"Its drawn-out wailing aaaah-aaaah-aaaaah with a dying fall is a quintessential Australian sound.",w:"Australian_raven"},
-  {n:"Magpie-lark",s:"Grallina cyanoleuca",fmin:1500,fmax:7000,fdom:3500,r:["au"],
+  {n:"Magpie-lark",s:"Grallina cyanoleuca",fmin:1200,fmax:5500,fdom:2500,r:["au"],t:"w",nr:[2,5],c:"m",cf:"l",
    h:"Open habitats near water, parks, and towns across Australia.",
    f:"Pairs sing precise antiphonal duets, each bird taking alternate notes so fast they sound as one.",w:"Magpie-lark"},
-  {n:"Grey Butcherbird",s:"Cracticus torquatus",fmin:1000,fmax:6500,fdom:3000,r:["au"],
+  {n:"Grey Butcherbird",s:"Cracticus torquatus",fmin:700,fmax:4500,fdom:1800,r:["au"],t:"w",nr:[2,5],c:"m",cf:"m",
    h:"Open woodland, scrub, and suburban gardens across Australia.",
    f:"A superb songster with a rich piping carol; wedges prey in forks like a butcher's hook.",w:"Grey_butcherbird"},
-  {n:"Crimson Rosella",s:"Platycercus elegans",fmin:1500,fmax:7000,fdom:3500,r:["au"],
+  {n:"Crimson Rosella",s:"Platycercus elegans",fmin:1500,fmax:7000,fdom:3500,r:["au"],t:"w",nr:[2,5],c:"l",cf:"l",
    h:"Wet forests, woodland, and gardens of eastern and southern Australia.",
    f:"Its bell-like piping calls ring through the forest; young birds are green before turning crimson.",w:"Crimson_rosella"},
-  {n:"Eastern Rosella",s:"Platycercus eximius",fmin:1500,fmax:7000,fdom:3500,r:["au"],
+  {n:"Eastern Rosella",s:"Platycercus eximius",fmin:1500,fmax:7000,fdom:3500,r:["au"],t:"w",nr:[3,8],c:"l",cf:"l",
    h:"Open woodland, farmland, and parks of southeastern Australia.",
    f:"Its brilliant multicoloured plumage makes it one of Australia's most recognisable parrots.",w:"Eastern_rosella"},
-  {n:"Australian King Parrot",s:"Alisterus scapularis",fmin:1500,fmax:6500,fdom:3200,r:["au"],
+  {n:"Australian King Parrot",s:"Alisterus scapularis",fmin:1500,fmax:6500,fdom:3200,r:["au"],t:"n",nr:[1,3],c:"l",cf:"l",
    h:"Rainforest and wet eucalyptus forest of eastern Australia.",
    f:"Males have a brilliant scarlet head; gives a ringing metallic call as it flies through the canopy.",w:"Australian_king_parrot"},
-  {n:"Superb Lyrebird",s:"Menura novaehollandiae",fmin:500,fmax:8000,fdom:2500,r:["au"],
+  {n:"Superb Lyrebird",s:"Menura novaehollandiae",fmin:500,fmax:8000,fdom:2500,r:["au"],t:"c",nr:[3,10],c:"h",cf:"l",
    h:"Wet forests and rainforest gullies of southeastern Australia.",
    f:"The world's greatest mimic; can imitate chainsaws, camera shutters, and 20 other bird species.",w:"Superb_lyrebird"},
-  {n:"New Holland Honeyeater",s:"Phylidonyris novaehollandiae",fmin:2000,fmax:8500,fdom:4500,r:["au"],
+  {n:"New Holland Honeyeater",s:"Phylidonyris novaehollandiae",fmin:2000,fmax:8500,fdom:4500,r:["au"],t:"n",nr:[3,10],c:"l",cf:"l",
    h:"Heathland, woodland, and gardens across southern Australia.",
    f:"An energetic nectar feeder, constantly on the move with sharp metallic chirps.",w:"New_Holland_honeyeater"},
-  {n:"Little Wattlebird",s:"Anthochaera chrysoptera",fmin:1000,fmax:6000,fdom:2800,r:["au"],
+  {n:"Little Wattlebird",s:"Anthochaera chrysoptera",fmin:1000,fmax:6000,fdom:2800,r:["au"],t:"n",nr:[2,5],c:"m",cf:"l",
    h:"Coastal heath, banksia scrub, and gardens across southern Australia.",
    f:"Gives a raucous coughing chock-chock as it defends flowering banksias from other nectar feeders.",w:"Little_wattlebird"},
-  {n:"Tui",s:"Prosthemadera novaeseelandiae",fmin:800,fmax:9000,fdom:3000,r:["au"],
+  {n:"Tui",s:"Prosthemadera novaeseelandiae",fmin:800,fmax:9000,fdom:3000,r:["au"],t:"c",nr:[2,8],c:"h",cf:"l",
    h:"Native forest, parks, and gardens across New Zealand.",
-   f:"Mixes clear bell notes with clicks, wheezes, and sounds beyond human hearing in one virtuoso song.",w:"Tui"},
-  {n:"New Zealand Bellbird",s:"Anthornis melanura",fmin:1500,fmax:8000,fdom:4000,r:["au"],
+   f:"Mixes clear bell notes with clicks, wheezes, and sounds beyond human hearing in one virtuoso song.",w:"Tūī"},
+  {n:"New Zealand Bellbird",s:"Anthornis melanura",fmin:1500,fmax:8000,fdom:4000,r:["au"],t:"w",nr:[2,6],c:"m",cf:"l",
    h:"Native forest and gardens across New Zealand.",
    f:"Its chiming bell-like notes so struck Captain Cook's crew that they compared dawn to silver bells.",w:"New_Zealand_bellbird"},
 
   // ── Expanded coverage — South & Central America ──
-  {n:"Southern Lapwing",s:"Vanellus chilensis",fmin:1000,fmax:5500,fdom:2800,r:["sa"],
+  {n:"Southern Lapwing",s:"Vanellus chilensis",fmin:1000,fmax:5500,fdom:2800,r:["sa","na"],t:"h",nr:[3,7],c:"l",cf:"l",
    h:"Grassland, wetlands, and playing fields across South America.",
    f:"Bold and noisy, it dive-bombs intruders with ringing keck-keck calls; a national bird of Uruguay.",w:"Southern_lapwing"},
-  {n:"Eared Dove",s:"Zenaida auriculata",fmin:300,fmax:1500,fdom:650,r:["sa"],
+  {n:"Eared Dove",s:"Zenaida auriculata",fmin:300,fmax:1200,fdom:650,r:["sa","na"],t:"w",nr:[1,3],c:"m",cf:"m",
    h:"Open country, farmland, and cities across South America.",
    f:"Forms some of the largest dove flocks on Earth, numbering in the millions near grain fields.",w:"Eared_dove"},
-  {n:"Bananaquit",s:"Coereba flaveola",fmin:3000,fmax:10000,fdom:6000,r:["sa","na"],
+  {n:"Bananaquit",s:"Coereba flaveola",fmin:4000,fmax:10000,fdom:6500,r:["sa","na"],t:"t",nr:[8,20],c:"m",cf:"l",
    h:"Gardens, forest edges, and scrub across the Neotropics.",
    f:"A tiny nectar-lover that punctures flowers at the base to steal nectar, bypassing pollination.",w:"Bananaquit"},
-  {n:"Saffron Finch",s:"Sicalis flaveola",fmin:2500,fmax:9000,fdom:5000,r:["sa"],
+  {n:"Saffron Finch",s:"Sicalis flaveola",fmin:2500,fmax:9000,fdom:5000,r:["sa","na"],t:"c",nr:[4,10],c:"l",cf:"l",
    h:"Open grassland, farmland, and towns across South America.",
    f:"Its cheerful canary-yellow plumage and bubbly song make it a favourite cage bird.",w:"Saffron_finch"},
-  {n:"Rufous Hornero",s:"Furnarius rufus",fmin:1500,fmax:7000,fdom:3500,r:["sa"],
+  {n:"Rufous Hornero",s:"Furnarius rufus",fmin:1500,fmax:7000,fdom:3500,r:["sa"],t:"t",nr:[6,15],c:"m",cf:"l",
    h:"Open country, farmland, and city parks across southern South America.",
    f:"Builds a hard clay oven-shaped nest on posts and poles; the national bird of Argentina.",w:"Rufous_hornero"},
-  {n:"Blue-and-yellow Macaw",s:"Ara ararauna",fmin:400,fmax:4000,fdom:1500,r:["sa"],
+  {n:"Blue-and-yellow Macaw",s:"Ara ararauna",fmin:400,fmax:4000,fdom:1500,r:["sa","na"],t:"n",nr:[0.5,2],c:"h",cf:"l",
    h:"Rainforest, gallery forest, and swamps across northern South America.",
    f:"Its raucous screech carries for kilometres; pairs mate for life and fly wing-tip to wing-tip.",w:"Blue-and-yellow_macaw"},
-  {n:"Bare-throated Bellbird",s:"Procnias nudicollis",fmin:2000,fmax:6000,fdom:3500,r:["sa"],
+  {n:"Bare-throated Bellbird",s:"Procnias nudicollis",fmin:2000,fmax:6000,fdom:3500,r:["sa"],t:"p",nr:[0.3,1.5],c:"l",cf:"l",
    h:"Atlantic rainforest of southeastern South America.",
    f:"Among the loudest birds on Earth; its hammering metallic bong rings through the forest.",w:"Bare-throated_bellbird"},
-  {n:"Social Flycatcher",s:"Myiozetetes similis",fmin:1500,fmax:7000,fdom:3500,r:["sa","na"],
+  {n:"Social Flycatcher",s:"Myiozetetes similis",fmin:1500,fmax:7000,fdom:3500,r:["sa","na"],t:"n",nr:[3,8],c:"m",cf:"l",
    h:"Forest edges, gardens, and waterside trees from Mexico to Argentina.",
    f:"Nests near wasp colonies for protection and scolds intruders in noisy family groups.",w:"Social_flycatcher"},
-  {n:"Chalk-browed Mockingbird",s:"Mimus saturninus",fmin:1500,fmax:8000,fdom:3800,r:["sa"],
+  {n:"Chalk-browed Mockingbird",s:"Mimus saturninus",fmin:1500,fmax:8000,fdom:3800,r:["sa"],t:"c",nr:[3,8],c:"h",cf:"l",
    h:"Open woodland, savanna, and gardens across central South America.",
    f:"A tireless songster that mimics neighbouring species from prominent perches at dawn.",w:"Chalk-browed_mockingbird"},
-  {n:"Green-winged Saltator",s:"Saltator similis",fmin:1500,fmax:7000,fdom:3500,r:["sa"],
+  {n:"Green-winged Saltator",s:"Saltator similis",fmin:1500,fmax:5500,fdom:3000,r:["sa"],t:"w",nr:[2,6],c:"m",cf:"l",
    h:"Forest edges and second growth across eastern South America.",
    f:"Prized for its loud melodic whistled song, a favourite in South American songbird contests.",w:"Green-winged_saltator"},
 ];
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const FREQ_BINS   = 192;
+const FREQ_BINS   = 192;   // display columns only — analysis runs at full FFT resolution
 const TIME_SLICES = 64;
 const MAX_REC_SEC = 60;
-const NYQUIST     = 24000;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const S = {
   lat:40.7, lon:-74.0, geoReady:false,
-  audioCtx:null, stream:null, analyser:null, hzPerBin:125,
-  srcNode:null, hp:null, lp:null, comp:null,
-  recorder:null, chunks:[], fftFrames:[],
-  recSec:0, timerInt:null, isRec:false,
+  audioCtx:null, stream:null, analyser:null, hzPerBin:125, fs:48000, bwHz:null,
+  srcNode:null, displayIn:null, hp:null, lp:null, comp:null,
+  tap:null, analyzer:null, nSamples:0, recId:0, gotSignal:false, recStart:0, occP:null,
+  timerInt:null, isRec:false,
   hpOn:true, lpOn:true, compOn:true,
 };
 
@@ -1145,7 +1155,10 @@ function resizeRenderer(){
   if(canvas.width!==w||canvas.height!==h){viz.renderer.setSize(w,h,false);viz.camera.aspect=w/h;viz.camera.updateProjectionMatrix();}
 }
 
-// ── Capture + render loop (always runs, viz-independent) ─────────────────────
+// ── Live display loop (always runs, viz-independent) ─────────────────────────
+// The AnalyserNode feeds ONLY the picture and the level meter. Classification never reads it:
+// it runs on raw PCM from the tap below (see captureTap), so display filters, the compressor and
+// the screen's refresh rate cannot bias any measurement.
 (function loop(){
   requestAnimationFrame(loop);
   const t=Date.now()/1000;
@@ -1153,9 +1166,9 @@ function resizeRenderer(){
   if(S.analyser&&S.isRec){
     const buf=new Uint8Array(S.analyser.frequencyBinCount);
     S.analyser.getByteFrequencyData(buf);
+    // Max-pool each group of `step` FFT bins: a narrow whistle between picked bins stays visible.
     const step=Math.floor(buf.length/FREQ_BINS),sub=new Float32Array(FREQ_BINS);
-    for(let i=0;i<FREQ_BINS;i++)sub[i]=buf[i*step]/255;
-    S.fftFrames.push(sub.slice());
+    for(let i=0;i<FREQ_BINS;i++){let m=0;for(let j=i*step;j<(i+1)*step;j++)if(buf[j]>m)m=buf[j];sub[i]=m/255;}
     const BRD_LO=Math.floor(300/(S.hzPerBin||125)),BRD_HI=Math.floor(8000/(S.hzPerBin||125));
     let birdEnergy=0,totalEnergy=0;
     for(let i=0;i<FREQ_BINS;i++){totalEnergy+=sub[i];if(i>=BRD_LO&&i<=BRD_HI)birdEnergy+=sub[i];}
@@ -1184,35 +1197,85 @@ function resizeRenderer(){
   }
 })();
 
+// ── Raw PCM tap ───────────────────────────────────────────────────────────────
+// AudioWorklet (inline module) with a ScriptProcessorNode fallback. It copies the linear,
+// unprocessed microphone signal, mixes to mono and posts 4096-sample batches. The node feeds a
+// zero-gain sink into destination so every engine keeps pulling it.
+const TAP_WORKLET=`class ChirpingTap extends AudioWorkletProcessor{
+  constructor(){super();this.b=new Float32Array(4096);this.n=0;this.live=true;
+    this.port.onmessage=e=>{if(e.data==="flush"){if(this.n)this.port.postMessage(this.b.slice(0,this.n));this.n=0;this.live=false;this.port.postMessage("flushed");}};}
+  process(inputs){
+    if(!this.live)return false;
+    const inp=inputs[0];if(!inp||!inp.length||!inp[0])return true;
+    const L=inp[0].length,C=inp.length;
+    for(let i=0;i<L;i++){let v=0;for(let c=0;c<C;c++)v+=inp[c][i];this.b[this.n++]=v/C;
+      if(this.n===4096){this.port.postMessage(this.b,[this.b.buffer]);this.b=new Float32Array(4096);this.n=0;}}
+    return true;}}
+registerProcessor("chirping-tap",ChirpingTap);`;
+async function captureTap(ctx,src,onChunk,forceScript){
+  const sink=ctx.createGain();sink.gain.value=0;sink.connect(ctx.destination);
+  if(!forceScript&&window.isSecureContext&&ctx.audioWorklet&&window.AudioWorkletNode){
+    let url;
+    try{
+      url=URL.createObjectURL(new Blob([TAP_WORKLET],{type:"text/javascript"}));
+      await Promise.race([ctx.audioWorklet.addModule(url),new Promise((_,no)=>setTimeout(()=>no(new Error("worklet load timeout")),3000))]);
+      const node=new AudioWorkletNode(ctx,"chirping-tap",{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[1]});
+      let flushed=null;
+      node.port.onmessage=e=>{if(e.data==="flushed"){flushed&&flushed();return;}onChunk(e.data);};
+      src.connect(node);node.connect(sink);
+      return{kind:"worklet",
+        flush:()=>new Promise(res=>{flushed=res;node.port.postMessage("flush");setTimeout(res,300);}),
+        close(){try{src.disconnect(node);}catch(e){}try{node.disconnect();sink.disconnect();}catch(e){}}};
+    }catch(e){console.warn("AudioWorklet unavailable — using ScriptProcessor:",e);}
+    finally{if(url)URL.revokeObjectURL(url);}
+  }
+  const sp=ctx.createScriptProcessor(4096,1,1);
+  sp.onaudioprocess=e=>onChunk(new Float32Array(e.inputBuffer.getChannelData(0)));
+  src.connect(sp);sp.connect(sink);
+  return{kind:"script",flush:()=>Promise.resolve(),
+    close(){try{src.disconnect(sp);}catch(e){}try{sp.disconnect();sink.disconnect();}catch(e){}sp.onaudioprocess=null;}};
+}
+
 // ── Audio setup ───────────────────────────────────────────────────────────────
 async function initAudio(){
   if(!navigator.mediaDevices?.getUserMedia)throw new Error("Microphone not supported.");
   // Close any previous context (important on iOS — stale contexts stay suspended)
   if(S.audioCtx){try{await S.audioCtx.close();}catch(e){}}
   S.stream=await navigator.mediaDevices.getUserMedia({
-    audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},
+    audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1},
     video:false
   });
+  // Created AFTER getUserMedia and without a sampleRate option: iOS switches the hardware rate
+  // when the mic opens, and Firefox rejects a MediaStreamSource whose rate differs from the context.
   S.audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   // iOS Safari requires explicit resume after user gesture
   if(S.audioCtx.state==="suspended"){
     try{await S.audioCtx.resume();}catch(e){}
   }
+  S.audioCtx.onstatechange=()=>{if(S.isRec&&S.audioCtx&&S.audioCtx.state==="interrupted")stopRec();};
+  S.fs=S.audioCtx.sampleRate;
+  // A Bluetooth headset mic carries only 8–16 kHz audio inside a 48 kHz context: analyse only the
+  // band it can actually deliver.
+  const trackRate=S.stream.getAudioTracks()[0]?.getSettings?.().sampleRate;
+  S.bwHz=trackRate&&trackRate<S.fs?0.45*trackRate:null;
   S.srcNode=S.audioCtx.createMediaStreamSource(S.stream);
+  // Display branch: src → displayIn → [HP] → [LP] → [compressor] → analyser. The raw tap is a
+  // separate, permanent branch from srcNode (rebuildChain never touches it).
+  S.displayIn=S.audioCtx.createGain();S.srcNode.connect(S.displayIn);
   S.hp=S.audioCtx.createBiquadFilter();S.hp.type="highpass";S.hp.frequency.value=300;S.hp.Q.value=.7;
   S.lp=S.audioCtx.createBiquadFilter();S.lp.type="lowpass";S.lp.frequency.value=12000;S.lp.Q.value=.7;
   S.comp=S.audioCtx.createDynamicsCompressor();
   S.comp.threshold.value=-24;S.comp.knee.value=15;S.comp.ratio.value=4;S.comp.release.value=.1;
   S.analyser=S.audioCtx.createAnalyser();S.analyser.fftSize=4096;S.analyser.smoothingTimeConstant=.20;
-  // Compute actual Hz per downsampled bin from real device sample rate
+  // Hz per displayed bin from the real device sample rate
   const _step=Math.floor(S.analyser.frequencyBinCount/FREQ_BINS);
-  S.hzPerBin=_step*S.audioCtx.sampleRate/S.analyser.fftSize; // e.g. 10*44100/4096=107.7 Hz
+  S.hzPerBin=_step*S.fs/S.analyser.fftSize; // e.g. 10*44100/4096=107.7 Hz
   rebuildChain();
 }
 function rebuildChain(){
-  if(!S.srcNode)return;
-  [S.srcNode,S.hp,S.lp,S.comp].forEach(n=>{try{n.disconnect();}catch(e){}});
-  let cur=S.srcNode;
+  if(!S.displayIn)return;
+  [S.displayIn,S.hp,S.lp,S.comp].forEach(n=>{try{n.disconnect();}catch(e){}});
+  let cur=S.displayIn;
   if(S.hpOn){cur.connect(S.hp);cur=S.hp;}
   if(S.lpOn){cur.connect(S.lp);cur=S.lp;}
   if(S.compOn){cur.connect(S.comp);cur=S.comp;}
@@ -1222,212 +1285,489 @@ function rebuildChain(){
 // ── Record toggle ─────────────────────────────────────────────────────────────
 async function toggleRec(){
   if(S.isRec){stopRec();return;}
-  if(S._starting)return; // guard against double-tap during async init
+  if(S._starting||S._stopping)return; // guard against double-tap during async init / teardown
   S._starting=true;
   try{await initAudio();}catch(e){toast("Mic error: "+e.message);S._starting=false;return;}
+  const id=++S.recId;
+  S.analyzer=createAnalyzer(S.fs,{bwHz:S.bwHz});S.nSamples=0;S.gotSignal=false;S._analyzed=false;
+  const onChunk=chunk=>{
+    if(id!==S.recId)return; // late batch from a previous recording
+    if(!S.gotSignal)for(let i=0;i<chunk.length;i+=64)if(chunk[i]!==0){S.gotSignal=true;break;}
+    S.analyzer.push(chunk);S.nSamples+=chunk.length;
+    if(S.isRec&&S.nSamples>=MAX_REC_SEC*S.fs)stopRec();
+  };
+  try{S.tap=await captureTap(S.audioCtx,S.srcNode,onChunk);S.tapKind=S.tap.kind;}
+  catch(e){toast("Audio capture error: "+e.message);S.stream?.getTracks().forEach(t=>t.stop());S._starting=false;return;}
   S._starting=false;
-  S.chunks=[];S.fftFrames=[];S._analyzed=false;
-  // MediaRecorder is optional — classification uses FFT frames, not the blob.
-  // If it's unavailable (older iOS), stopRec() calls onStop() directly.
-  S.recorder=null;
-  try{
-    const mime=["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg"]
-      .find(m=>{try{return MediaRecorder.isTypeSupported(m);}catch(e){return false;}})||"";
-    S.recorder=new MediaRecorder(S.stream,mime?{mimeType:mime}:{});
-    S.recorder.ondataavailable=e=>{if(e.data.size>0)S.chunks.push(e.data);};
-    S.recorder.onstop=onStop;S.recorder.start(150);
-  }catch(e){console.warn("MediaRecorder unavailable — using direct analysis:",e);}
-  S.isRec=true;
+  // Health check: a worklet that delivers nothing (seen on some WebViews) is swapped for the
+  // ScriptProcessor path before the user loses the recording.
+  setTimeout(async()=>{
+    if(id===S.recId&&S.isRec&&!S.gotSignal&&S.tap.kind==="worklet"){
+      S.tap.close();S.tap=await captureTap(S.audioCtx,S.srcNode,onChunk,true);S.tapKind=S.tap.kind;
+    }
+  },750);
+  // Prefetch the local, seasonal occurrence prior while the user records.
+  S.occP=S.geoReady?fetchOccurrence(S.lat,S.lon):Promise.resolve(null);
+  S.isRec=true;S.recStart=performance.now();
   recBtn.classList.add("rec");recIcon.textContent="⏹";
   recBtn.setAttribute("aria-label","Stop recording");recBtn.setAttribute("aria-pressed","true");
   statusMsg.textContent="Recording… tap ⏹ when the bird finishes";
   if(viz)viz.oc.autoRotate=false;
-  S.recSec=0;timerEl.style.display="block";timerEl.textContent="00:00";
-  S.timerInt=setInterval(()=>{S.recSec++;timerEl.textContent=fmt(S.recSec);if(S.recSec>=MAX_REC_SEC)stopRec();},1000);
+  timerEl.style.display="block";timerEl.textContent="00:00";
+  S.timerInt=setInterval(()=>{timerEl.textContent=fmt(Math.floor(S.nSamples/S.fs));},250);
 }
-function stopRec(){
+async function stopRec(){
   if(!S.isRec)return;
-  S.isRec=false;
-  S.stream?.getTracks().forEach(t=>t.stop());
+  S.isRec=false;S._stopping=true;
   clearInterval(S.timerInt);timerEl.style.display="none";
   recBtn.classList.remove("rec");recIcon.textContent="🎙️";
   recBtn.setAttribute("aria-label","Start recording");recBtn.setAttribute("aria-pressed","false");
   statusMsg.textContent="Analysing…";
   if(viz)viz.oc.autoRotate=true;
-  if(S.recorder&&S.recorder.state!=="inactive"){
-    try{S.recorder.stop();}catch(e){onStop();return;}
-    // Watchdog: some browsers never fire onstop after tracks end — force analysis
-    setTimeout(()=>{if(!S._analyzed)onStop();},1200);
-  }else{
-    onStop();
-  }
+  // Drain the tap's last partial batch, THEN release the mic and the audio context (an open
+  // context keeps iOS in record mode and drains the battery).
+  try{await S.tap?.flush();}catch(e){}
+  S.recId++;                                 // anything arriving later is dropped
+  S.tap?.close();S.tap=null;
+  S.stream?.getTracks().forEach(t=>t.stop());
+  const elapsed=(performance.now()-S.recStart)/1000,expect=elapsed*S.fs;
+  if(S.nSamples>S.fs&&Math.abs(S.nSamples/expect-1)>0.02)
+    console.warn(`Capture clock drift: ${S.nSamples} samples in ${elapsed.toFixed(2)} s at ${S.fs} Hz`);
+  try{await S.audioCtx?.close();}catch(e){}S.audioCtx=null;S.analyser=null;S.displayIn=null;S.srcNode=null;
+  S._stopping=false;
+  onStop();
 }
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&S.isRec)stopRec();});
 function fmt(s){return`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;}
 
-// ── Spectral features ─────────────────────────────────────────────────────────
-function computeFeatures(frames){
-  if(!frames.length)return{peak:0,centroid:0,signal:0,duration:0,peaks:[],activeRatio:0};
+// ── Calibrated bioacoustic DSP ────────────────────────────────────────────────
+// Everything here works on LINEAR PCM and LINEAR POWER; dB appears only for display and for
+// log-parabolic peak interpolation. See .claude/skills/bioacoustic-dsp for the physics behind
+// each choice and the tolerances verified by tests/dsp-precision.mjs.
+const DSP={fLo:150,fHi:12000,trimSec:0.2,hpHz:100,winSec:0.0213,
+  q:0.2,           // noise PSD = per-bin 20th percentile of 3-frame-smoothed power…
+  qBias:0.417,     // …divided by its quantile/mean ratio on white noise (0.411–0.420 at 16–48 kHz) → mean noise power
+  onDb:9,offDb:5,  // activity hysteresis on 3×3-smoothed per-cell SNR (0.0 % false activity on white noise)
+  cellDb:6,        // a time–frequency cell counts as "signal" for measurements above this SNR
+  minNoteSec:0.015,maxGapSec:0.020,peakFloorDb:-20,maxPeaks:5,concBins:3,
+  deadPow:1e-14};   // per-bin power treated as digital silence / absolute noise floor (≈ −116 dBFS in-band)
 
-  // Raw signal computed BEFORE noise subtraction — used for the silence gate in onStop()
-  const energies=frames.map(f=>f.reduce((s,v)=>s+v,0)/f.length);
-  const rawSignal=energies.reduce((a,b)=>a+b,0)/energies.length;
-  // Noise floor estimation
-  const sortedE=[...energies].sort((a,b)=>a-b);
-  const noiseFloor=sortedE[Math.floor(sortedE.length*0.10)];
-  const threshold=noiseFloor+(sortedE[sortedE.length-1]-noiseFloor)*0.25;
+// Real-input radix-2 FFT (N/2-point complex FFT + split step). Returns fn(x, outPower, k0, k1)
+// writing |X_k|² for k0≤k≤k1. Tables are cached per N.
+const _fftCache={};
+function makeRealFFT(N){
+  if(_fftCache[N])return _fftCache[N];
+  const M=N>>1,bits=Math.log2(M),rev=new Uint32Array(M);
+  for(let i=0;i<M;i++){let r=0;for(let b=0;b<bits;b++)r|=((i>>b)&1)<<(bits-1-b);rev[i]=r;}
+  const cs=new Float64Array(M>>1),sn=new Float64Array(M>>1);
+  for(let j=0;j<M>>1;j++){cs[j]=Math.cos(2*Math.PI*j/M);sn[j]=Math.sin(2*Math.PI*j/M);}
+  const wr=new Float64Array(M),wi=new Float64Array(M);
+  for(let k=0;k<M;k++){wr[k]=Math.cos(2*Math.PI*k/N);wi[k]=Math.sin(2*Math.PI*k/N);}
+  const re=new Float64Array(M),im=new Float64Array(M);
+  const fn=(x,out,k0,k1)=>{
+    for(let n=0;n<M;n++){const j=rev[n];re[j]=x[2*n];im[j]=x[2*n+1];}
+    for(let size=2;size<=M;size<<=1){
+      const half=size>>1,step=M/size;
+      for(let i=0;i<M;i+=size)for(let j=0;j<half;j++){
+        const tr=cs[j*step],ti=-sn[j*step],a=i+j,b=a+half;
+        const xr=re[b]*tr-im[b]*ti,xi=re[b]*ti+im[b]*tr;
+        re[b]=re[a]-xr;im[b]=im[a]-xi;re[a]+=xr;im[a]+=xi;
+      }
+    }
+    for(let k=k0;k<=k1;k++){
+      if(k===0){const v=re[0]+im[0];out[0]=v*v;continue;}
+      const m=M-k,er=(re[k]+re[m])/2,ei=(im[k]-im[m])/2,or=(im[k]+im[m])/2,oi=-(re[k]-re[m])/2;
+      const Xr=er+wr[k]*or+wi[k]*oi,Xi=ei+wr[k]*oi-wi[k]*or;
+      out[k-k0]=Xr*Xr+Xi*Xi;
+    }
+  };
+  return _fftCache[N]=fn;
+}
 
-  // Active frame selection
-  const activeFrames=frames.filter((_,i)=>energies[i]>threshold);
-  const useFrames=activeFrames.length>=5?activeFrames:frames;
+// RBJ biquad high-pass (Butterworth, Q=1/√2) as a stateful linear filter — removes DC, handling
+// thumps and wind rumble below the bird band before the FFT (Hann sidelobes would leak it upward).
+function makeHighpass(fs,f0){
+  const w=2*Math.PI*f0/fs,al=Math.sin(w)/(2*Math.SQRT1_2),c=Math.cos(w),a0=1+al;
+  const b0=(1+c)/2/a0,b1=-(1+c)/a0,b2=b0,a1=-2*c/a0,a2=(1-al)/a0;
+  let x1=0,x2=0,y1=0,y2=0;
+  return v=>{const y=b0*v+b1*x1+b2*x2-a1*y1-a2*y2;x2=x1;x1=v;y2=y1;y1=y;return y;};
+}
 
-  // Noise-spectrum estimation (quietest 10% of frames)
-  const noiseCount=Math.max(1,Math.floor(frames.length*0.10));
-  const noiseIdxs=energies.map((e,i)=>[e,i]).sort(([a],[b])=>a-b).slice(0,noiseCount).map(([,i])=>i);
-  const noiseSpec=new Float32Array(FREQ_BINS);
-  for(const idx of noiseIdxs)for(let b=0;b<FREQ_BINS;b++)noiseSpec[b]+=frames[idx][b]/noiseCount;
+function quantileInPlace(a,q){ // Hoare quickselect on a Float64Array copy
+  let lo=0,hi=a.length-1;const k=Math.min(hi,Math.max(0,Math.floor(q*(a.length-1))));
+  while(lo<hi){const p=a[(lo+hi)>>1];let i=lo,j=hi;
+    while(i<=j){while(a[i]<p)i++;while(a[j]>p)j--;if(i<=j){const t=a[i];a[i]=a[j];a[j]=t;i++;j--;}}
+    if(k<=j)hi=j;else if(k>=i)lo=i;else break;}
+  return a[k];
+}
 
-  // Noise-subtracted average spectrum (subtract only 85% of noise to preserve quiet harmonics)
-  const avg=new Float32Array(FREQ_BINS);
-  for(const f of useFrames)for(let b=0;b<FREQ_BINS;b++)avg[b]+=Math.max(0,f[b]-0.85*noiseSpec[b])/useFrames.length;
+// Streaming analyzer: push() PCM chunks as they arrive (STFT runs incrementally, so stopping a
+// 60 s recording costs only finish()); finish() returns calibrated measurements.
+function createAnalyzer(fs,opts={}){
+  const N=2**Math.round(Math.log2(DSP.winSec*fs)),hop=N>>2,df=fs/N;
+  // One guard bin beyond each band edge so a peak AT the edge can still be interpolated.
+  const k0=Math.max(1,Math.floor(DSP.fLo/df)-1),k1=Math.min((N>>1)-1,Math.ceil(Math.min(DSP.fHi,opts.bwHz||Infinity)/df)+1);
+  const nb=k1-k0+1,fft=makeRealFFT(N),hp=makeHighpass(fs,DSP.hpHz);
+  const win=new Float64Array(N);let w2=0;
+  for(let n=0;n<N;n++){win[n]=0.5-0.5*Math.cos(2*Math.PI*n/N);w2+=win[n]*win[n];}
+  const norm=2/(N*w2);              // Σ_k P_k = mean signal power (Parseval, one-sided)
+  const ring=new Float64Array(N),frame=new Float64Array(N),pw=new Float64Array(nb);
+  const trim=Math.round(DSP.trimSec*fs),rows=[];
+  let nIn=0,fill=0,sinceHop=0,clip=0;
+  function emit(){
+    for(let n=0;n<N;n++)frame[n]=ring[(fill+n)%N]*win[n];
+    fft(frame,pw,k0,k1);
+    const row=new Float32Array(nb);for(let i=0;i<nb;i++)row[i]=pw[i]*norm;
+    rows.push(row);
+  }
+  return{fs,N,hop,df,k0,k1,
+    push(chunk){
+      for(let i=0;i<chunk.length;i++){
+        const v=chunk[i];if(v>=0.99||v<=-0.99)clip++;
+        const y=hp(v);nIn++;
+        if(nIn<=trim)continue;                       // drop the button-press transient
+        ring[fill]=y;fill=(fill+1)%N;sinceHop++;
+        if(nIn-trim>=N&&sinceHop>=hop){sinceHop=0;emit();}
+      }
+    },
+    finish(){return analyzeFrames(rows,{fs,N,hop,df,k0,k1,nb,nIn,clip,trim});}
+  };
+}
+function analyzePCM(pcm,fs,opts){const a=createAnalyzer(fs,opts);a.push(pcm);return a.finish();}
 
-  // Smooth spectrum with weighted 3-point MA to suppress single-bin noise spikes
-  const sm=new Float32Array(FREQ_BINS);
-  for(let i=1;i<FREQ_BINS-1;i++)sm[i]=(avg[i-1]+2*avg[i]+avg[i+1])/4;
-  sm[0]=avg[0];sm[FREQ_BINS-1]=avg[FREQ_BINS-1];
+function analyzeFrames(rows0,g){
+  const {fs,hop,df,k0,nb}=g,fps=fs/hop;
+  // Drop the last trimSec too (stop-button transient), if the recording is long enough.
+  const dropEnd=Math.round(DSP.trimSec*fps),rows=rows0.length>4*dropEnd+8?rows0.slice(0,rows0.length-dropEnd):rows0;
+  const T=rows.length,hz=k=>(k0+k)*df;
+  const base={fs,N:g.N,df,frames:T,duration:(g.nIn||0)/fs,clipFrac:g.nIn?g.clip/g.nIn:0,
+    peak:0,peaks:[],snrDb:-Infinity,activeFrac:0,silent:true,noteRate:null,windFrac:0};
+  if(T<8)return base;
 
-  // Actual Hz per downsampled sub-bin (uses real device sample rate, not hardcoded NYQUIST)
-  const H=S.hzPerBin||125;
+  // 1. Noise PSD, pass 1: per-bin low quantile of 3-frame-smoothed power (robust to intermittent
+  //    calls), bias-corrected to the mean, then capped at 4× (6 dB) its ±½-octave running median
+  //    across frequency so a continuous singer is not mistaken for stationary noise.
+  //    Frames of exact digital silence (a muted or not-yet-started device, padded files) carry no
+  //    information about the acoustic noise floor and are excluded; a −116 dBFS-per-band floor
+  //    (far below any real microphone's self-noise) keeps SNRs finite.
+  const live=[];for(let t=0;t<T;t++){let e=0;for(let k=0;k<nb;k++)e+=rows[t][k];if(e>DSP.deadPow*nb)live.push(t);}
+  if(live.length<8)return base;
+  let noise=new Float64Array(nb);const col=new Float64Array(live.length);
+  for(let k=0;k<nb;k++){
+    for(let j=0;j<live.length;j++){const t=live[j],a=rows[Math.max(0,t-1)][k],b=rows[t][k],c=rows[Math.min(T-1,t+1)][k];col[j]=(a+b+c)/3;}
+    noise[k]=Math.max(DSP.deadPow,quantileInPlace(col.slice(),DSP.q)/DSP.qBias);
+  }
+  const capped=new Float64Array(nb);
+  for(let k=0;k<nb;k++){
+    const f=hz(k),lo=Math.max(0,Math.floor(f/Math.SQRT2/df)-k0),hi=Math.min(nb-1,Math.ceil(f*Math.SQRT2/df)-k0);
+    const w=Float64Array.from(noise.subarray(lo,hi+1));capped[k]=Math.min(noise[k],4*quantileInPlace(w,0.5));
+  }
+  noise=capped;
 
-  // Multi-peak detection on smoothed spectrum: local maxima in the bird band (200 Hz–12 kHz)
-  const peaks=[];
-  for(let i=2;i<FREQ_BINS-2;i++){
-    if(sm[i]>sm[i-1]&&sm[i]>sm[i-2]&&sm[i]>sm[i+1]&&sm[i]>sm[i+2]&&sm[i]>0.005){
-      const hz=i*H;
-      if(hz>200&&hz<12000)peaks.push({hz,amp:sm[i]});
+  // 2. Activity: per-cell SNR smoothed over 3 frames × 3 bins, hysteresis on the frame maximum,
+  //    gap bridging and minimum note length. Wind gusts are excluded: strong (>15 dB) energy below
+  //    400 Hz that outweighs 400–1600 Hz, with its energy-weighted log-frequency centroid below
+  //    280 Hz — the 1/f^α signature of turbulence at the mic. A low owl/dove note sits higher, and
+  //    even a pure tone at the band floor is kept because its energy lies within ±2 bins.
+  const onR=10**(DSP.onDb/10),offR=10**(DSP.offDb/10),cellR=10**(DSP.cellDb/10);
+  const maxGap=Math.round(DSP.maxGapSec*fps),minNote=Math.max(1,Math.round(DSP.minNoteSec*fps));
+  const kw=Math.max(1,Math.min(nb-1,Math.round(400/df)-k0)),kw2=Math.min(nb-1,Math.round(1600/df)-k0),lnWind=Math.log(280);
+  const lnF=Float64Array.from({length:nb},(_,k)=>Math.log(Math.max(1,(k0+k)*df)));
+  const lowE=new Float64Array(T),lowC=new Float64Array(T),lowT=new Uint8Array(T);
+  let ssnr,act,wind;
+  function detect(){
+    const snr=rows.map(r=>{const s=new Float32Array(nb);for(let k=0;k<nb;k++)s[k]=r[k]/noise[k];return s;});
+    const fmax=new Float64Array(T);ssnr=new Array(T);wind=new Uint8Array(T);act=new Uint8Array(T);
+    for(let t=0;t<T;t++){
+      const s=new Float32Array(nb),a=snr[Math.max(0,t-1)],b=snr[t],c=snr[Math.min(T-1,t+1)];let m=0;
+      for(let k=0;k<nb;k++){const l=Math.max(0,k-1),h=Math.min(nb-1,k+1);
+        const v=(a[l]+a[k]+a[h]+b[l]+b[k]+b[h]+c[l]+c[k]+c[h])/9;s[k]=v;if(v>m)m=v;}
+      ssnr[t]=s;fmax[t]=m;
+      let e=0,n=0,em=0,am=0,av=-1,lc=0;
+      for(let k=0;k<=kw2;k++){const v=Math.max(0,rows[t][k]-noise[k]);if(v>av){av=v;am=k;}lc+=v*lnF[k];if(k<kw){e+=v;n+=noise[k];}else em+=v;}
+      let s2=0;for(let k=Math.max(0,am-2);k<=Math.min(kw2,am+2);k++)s2+=Math.max(0,rows[t][k]-noise[k]);
+      lowE[t]=n>0?e/n:0;lowC[t]=e+em>0?lc/(e+em):99;lowT[t]=s2>=0.9*(e+em)?1:0;
+      if(lowE[t]>31.6&&e>1.5*em&&lowC[t]<lnWind&&!lowT[t])wind[t]=1;
+    }
+    // Dilate: gust shoulders (weaker, same low-centroid non-tonal signature) next to a flagged gust.
+    for(let t=0;t<T;t++)if(!wind[t]&&lowE[t]>8&&lowC[t]<lnWind+0.35&&!lowT[t])
+      for(let d=-3;d<=3;d++){const u=t+d;if(u>=0&&u<T&&wind[u]===1){wind[t]=2;break;}}
+    let on=false;
+    for(let t=0;t<T;t++){if(wind[t]){on=false;continue;}on=on?fmax[t]>=offR:fmax[t]>=onR;act[t]=on?1:0;}
+    for(let t=0;t<T;){if(act[t]){t++;continue;}let u=t;while(u<T&&!act[u])u++;
+      if(t>0&&u<T&&u-t<=maxGap&&!wind.subarray(t,u).some(Boolean))act.fill(1,t,u);t=u;}
+    for(let t=0;t<T;){if(!act[t]){t++;continue;}let u=t;while(u<T&&act[u])u++;if(u-t<minNote)act.fill(0,t,u);t=u;}
+  }
+  detect();
+  // Noise PSD, pass 2: the quantile estimate is biased high when calls fill most frames, so
+  // re-estimate it as the plain mean over clearly noise-only frames (≥4 frames from any activity
+  // or wind), dropping frames whose total power exceeds 1.5× the median (unflagged transients —
+  // for stationary noise the 250-bin total fluctuates only ~6 %), then redo detection.
+  let quiet=[];for(const t of live){let ok=true;for(let d=-4;d<=4&&ok;d++){const u=Math.min(T-1,Math.max(0,t+d));if(act[u]||wind[u])ok=false;}if(ok)quiet.push(t);}
+  if(quiet.length){const tot=quiet.map(t=>rows[t].reduce((a,b)=>a+b,0)),med=quantileInPlace(Float64Array.from(tot),0.5);quiet=quiet.filter((_,i)=>tot[i]<=1.5*med);}
+  if(quiet.length>=Math.max(20,0.08*T)){
+    const m=new Float64Array(nb);for(const t of quiet)for(let k=0;k<nb;k++)m[k]+=rows[t][k];
+    for(let k=0;k<nb;k++)m[k]=Math.max(DSP.deadPow,m[k]/quiet.length);
+    noise=m;detect();
+  }
+  const actIdx=[];for(let t=0;t<T;t++)if(act[t])actIdx.push(t);
+  let windN=0;for(let t=0;t<T;t++)windN+=wind[t];
+  const out={...base,windFrac:windN/T,activeFrac:actIdx.length/T,noise};
+  if(!actIdx.length)return out;
+
+  // 3. Aggregate spectra over active frames. Pbar: mean power (for peak interpolation);
+  //    E: noise-subtracted energy in signal cells only (for quantiles, tonality, envelope).
+  const Pbar=new Float64Array(nb),E=new Float64Array(nb);
+  let c1=0,c3=0,cw=0;const C=DSP.concBins,fpk=[];
+  for(const t of actIdx){
+    const r=rows[t],s=ssnr[t];let tot=0,pk=-1,pv=0;const sig=new Float64Array(nb);
+    for(let k=0;k<nb;k++){Pbar[k]+=r[k];if(s[k]>=cellR){const v=Math.max(0,r[k]-noise[k]);sig[k]=v;E[k]+=v;tot+=v;if(v>pv){pv=v;pk=k;}}}
+    if(tot<=0)continue;
+    fpk.push([Math.log((k0+pk)*df),tot]);
+    // Spectral concentration: share of the frame's signal energy within ±C bins of its strongest
+    // peak (c1) and of its three strongest separated peaks (c3). Pure whistle → c1≈1; harmonic
+    // stack → c1 moderate, c3 high; broadband buzz/screech → both low.
+    let s1=0;for(let k=Math.max(0,pk-C);k<=Math.min(nb-1,pk+C);k++)s1+=sig[k];
+    let s3=s1;const used=new Uint8Array(nb);for(let k=Math.max(0,pk-C);k<=Math.min(nb-1,pk+C);k++)used[k]=1;
+    for(let j=0;j<2;j++){let bk=-1,bv=0;for(let k=0;k<nb;k++)if(!used[k]&&sig[k]>bv){bv=sig[k];bk=k;}
+      if(bk<0)break;for(let k=Math.max(0,bk-C);k<=Math.min(nb-1,bk+C);k++)if(!used[k]){used[k]=1;s3+=sig[k];}}
+    c1+=s1;c3+=s3;cw+=tot;
+  }
+  for(let k=0;k<nb;k++)Pbar[k]/=actIdx.length;
+
+  // 4. In-band SNR: mean active power above the noise floor vs integrated noise power.
+  let sp=0,np=0;for(let k=0;k<nb;k++){sp+=Pbar[k]-noise[k];np+=noise[k];}
+  out.snrDb=10*Math.log10(Math.max(1e-12,sp)/np);
+  out.silent=!(sp>0)||out.snrDb<-6;
+
+  // 5. Peaks of the aggregate spectrum, refined by log-parabolic interpolation
+  //    (Hann: ≤0.016 bin bias → ≲1 Hz at fs/N≈47 Hz).
+  const A=new Float64Array(nb);for(let k=0;k<nb;k++)A[k]=Math.max(0,Pbar[k]-noise[k]);
+  const As=new Float64Array(nb);for(let k=0;k<nb;k++)As[k]=(A[Math.max(0,k-1)]+2*A[k]+A[Math.min(nb-1,k+1)])/4;
+  let amax=0;for(let k=0;k<nb;k++)if(As[k]>amax)amax=As[k];
+  const cand=[];
+  for(let k=1;k<nb-1;k++){
+    if(!(As[k]>=As[k-1]&&As[k]>As[k+1]&&As[k]>=amax*10**(DSP.peakFloorDb/10)&&Pbar[k]>=2*noise[k]))continue;
+    let j=k;if(Pbar[k-1]>Pbar[j])j=k-1;if(Pbar[k+1]>Pbar[j])j=k+1; // true max bin of the unsmoothed spectrum
+    if(j<1||j>nb-2)continue;
+    const a=Math.log(Pbar[j-1]),b=Math.log(Pbar[j]),c=Math.log(Pbar[j+1]),den=a-2*b+c;
+    const p=den<0?Math.max(-0.5,Math.min(0.5,0.5*(a-c)/den)):0;
+    cand.push({hz:(k0+j+p)*df,pw:A[j],db:10*Math.log10(Math.exp(b-0.25*(a-c)*p))});
+  }
+  cand.sort((x,y)=>y.pw-x.pw);
+  const peaks=[];for(const c of cand){if(peaks.every(p=>Math.abs(Math.log2(c.hz/p.hz))>1/12))peaks.push(c);if(peaks.length>=DSP.maxPeaks)break;}
+  const ptot=peaks.reduce((s,p)=>s+p.pw,0)||1;peaks.forEach(p=>p.share=p.pw/ptot);
+  out.peaks=peaks;out.peak=peaks.length?peaks[0].hz:0;
+
+  // 6. Energy quantiles F5…F95 from signal cells (bins treated as uniform over ±df/2).
+  let etot=0;for(let k=0;k<nb;k++)etot+=E[k];
+  const qf=q=>{let c=0;for(let k=0;k<nb;k++){if(c+E[k]>=q*etot)return(k0+k-0.5+(q*etot-c)/E[k])*df;c+=E[k];}return hz(nb-1);};
+  if(etot>0){out.f5=qf(.05);out.f25=qf(.25);out.f50=qf(.5);out.f75=qf(.75);out.f95=qf(.95);}
+  out.conc1=cw>0?c1/cw:0;out.conc3=cw>0?c3/cw:0;
+  // Pitch spread: energy-weighted inter-quartile range of the per-frame dominant ln-frequency.
+  // Repeated notes / steady whistles ≈ 0.0–0.1; warbles with varied syllables ≳ 0.2.
+  if(fpk.length>=5){fpk.sort((a,b)=>a[0]-b[0]);const W=fpk.reduce((s,e)=>s+e[1],0);let c=0,q1=null,q3=null;
+    for(const [v,w] of fpk){c+=w;if(q1===null&&c>=0.25*W)q1=v;if(q3===null&&c>=0.75*W){q3=v;break;}}out.pitchIQR=q3-q1;}else out.pitchIQR=null;
+
+  // 7. Note rate: autocorrelation of the band-energy envelope (dB re noise) across the active
+  //    span; smallest lag whose peak is ≥85% of the best (avoids octave-down errors).
+  out.noteRate=null;out.noteRateQ=0;
+  if(etot>0){
+    const lo=Math.max(0,Math.floor(out.f5/1.25/df)-k0),hi=Math.min(nb-1,Math.ceil(out.f95*1.25/df)-k0);
+    let nn=0;for(let k=lo;k<=hi;k++)nn+=noise[k];
+    const t0=actIdx[0],t1=actIdx[actIdx.length-1],L=t1-t0+1,env=new Float64Array(L);let mu=0;
+    for(let t=t0;t<=t1;t++){let e=0;for(let k=lo;k<=hi;k++)e+=Math.max(0,rows[t][k]-noise[k]);env[t-t0]=10*Math.log10(1+e/nn);mu+=env[t-t0];}
+    mu/=L;let v0=0;for(let i=0;i<L;i++){env[i]-=mu;v0+=env[i]*env[i];}
+    const tauLo=Math.max(2,Math.floor(fps/40)),tauHi=Math.min(Math.floor(L/3),Math.ceil(fps/0.7));
+    if(v0>0&&tauHi>tauLo+2){
+      const r=new Float64Array(tauHi+2);
+      for(let tau=tauLo-1;tau<=tauHi+1;tau++){let s=0;for(let i=0;i+tau<L;i++)s+=env[i]*env[i+tau];r[tau]=s/v0*L/(L-tau);}
+      let best=0;const pk=[];
+      for(let tau=tauLo;tau<=tauHi;tau++)if(r[tau]>r[tau-1]&&r[tau]>=r[tau+1]&&r[tau]>0){pk.push(tau);if(r[tau]>best)best=r[tau];}
+      const tau=pk.find(t=>r[t]>=0.85*best);
+      if(tau&&best>=0.25){
+        const a=r[tau-1],b=r[tau],c=r[tau+1],den=a-2*b+c,p=den<0?0.5*(a-c)/den:0;
+        out.noteRate=fps/(tau+p);out.noteRateQ=b;
+      }
     }
   }
-  peaks.sort((a,b)=>b.amp-a.amp);
-  // Drop weak noise blips: keep peaks with at least 15% of the strongest peak's amplitude
-  const maxAmp=peaks.length?peaks[0].amp:0;
-  const topPeaks=peaks.filter(p=>p.amp>=maxAmp*0.15).slice(0,5);
-
-  // Traditional display features (use smoothed spectrum for consistency)
-  let peakIdx=0;
-  for(let i=1;i<FREQ_BINS;i++)if(sm[i]>sm[peakIdx])peakIdx=i;
-  const peak=Math.round(peakIdx*H);
-  let wS=0,wD=0;
-  for(let i=0;i<FREQ_BINS;i++){wS+=i*sm[i];wD+=sm[i];}
-  const centroidBin=wD>0?wS/wD:0;
-  const centroid=Math.round(centroidBin*H);
-  // Spectral bandwidth: energy-weighted spread around the centroid, in Hz.
-  // This is the standard "spectral bandwidth" audio feature — it lets us match
-  // a species' known vocal-range width (fmax-fmin), not just its peak frequency,
-  // which is essential for telling apart species that happen to share a dominant
-  // frequency but sing narrow whistles vs. wide, buzzy trills.
-  let bwS=0;
-  for(let i=0;i<FREQ_BINS;i++)bwS+=sm[i]*Math.pow(i-centroidBin,2);
-  const bandwidth=Math.round((wD>0?Math.sqrt(bwS/wD):0)*H);
-  const duration=S.recSec>0?S.recSec:frames.length/60;
-  const activeRatio=activeFrames.length/(frames.length||1);
-
-  // Precompute per-recording peak-amplitude aggregates ONCE here — scoreSpecies()
-  // is called once per species (up to 219 times per classification) and previously
-  // recomputed these identical, bird-independent sums on every single call.
-  const peakMaxAmp=topPeaks.length?Math.max(...topPeaks.map(p=>p.amp)):0;
-  const peakTotalAmp=topPeaks.reduce((s,p)=>s+p.amp,0);
-
-  return{peak,centroid,bandwidth,signal:rawSignal,duration,peaks:topPeaks,activeRatio,peakMaxAmp,peakTotalAmp};
+  return out;
 }
 
-// ── Region + scoring ──────────────────────────────────────────────────────────
-function getRegion(lat,lon){
-  if(lat>=15&&lat<=72&&lon>=-170&&lon<=-52)return"na";
-  if(lat>=35&&lat<=72&&lon>=-10&&lon<=40)return"eu";
-  if(lat>=-10&&lat<=37&&lon>=-18&&lon<=52)return"af";
-  if(lat>=5&&lat<=72&&lon>=40&&lon<=145)return"as";
-  if(lat>=-45&&lat<=-10&&lon>=113&&lon<=155)return"au";
-  if(lat>=-55&&lat<=15&&lon>=-82&&lon<=-34)return"sa";
-  return null;
+// ── Bayesian species scoring ──────────────────────────────────────────────────
+// log p(features | species) is a sum of physically motivated terms, all in LOG-FREQUENCY
+// (pitch variation between individuals is multiplicative, not additive):
+//   peak   — one detected spectral peak is the species' dominant frequency (or its octave),
+//   band   — F5/F95 energy quantiles fall inside the species' band,
+//   type   — spectral concentration matches the vocal texture (whistle … percussive),
+//   rate   — the envelope's note rate falls inside the species' note-rate range.
+// Every density is normalised, and each is a mixture with a broad background so a single wrong
+// catalogue value degrades a species gracefully instead of vetoing it. An explicit open-set class
+// ("not in the catalogue") competes with every species. Rules: .claude/skills/classifier-statistics.
+const MODEL={
+  sigPeak:0.12,               // σ of ln(f_peak) around ln(fdom): intraspecific + catalogue spread
+  cfScale:{h:1,m:1.25,l:1.6,d:1},   // catalogue frequency confidence widens σ (d = measured, see b.x)
+  cTrust:{h:0.9,m:0.75,l:0.5,d:0.95},// probability the descriptor (t, nr) is right; else background
+  spScale:1,tsScale:1,              // multipliers on measured per-species spreads (fitted on real audio)
+  harm:0.02,                  // weight of the octave alternatives (2·fdom, fdom/2)
+  outlier:0.05,               // per-term background mixture weight
+  tauBand:0.05,sigBand:0.1,   // F5 ∈ [ln fmin−τ, ln fdom], F95 ∈ [ln fdom, ln fmax+τ], Gaussian tails σ
+  sigRate:0.15,rateDetect:0.8,rateNullDetect:0.25,
+  // Texture prototypes per vocal type: [logit c1, logit c3, σ, ln(pitchIQR+0.02)] where c1/c3 =
+  // spectral concentration (±3-bin share around the strongest / 3 strongest peaks) and pitchIQR =
+  // spread of the per-frame dominant ln-frequency. Ideal-signal values measured with the DSP
+  // (pure tone c≈1.0/1.0; 5-harmonic stack ≈0.68/0.93; 2–6 kHz noise ≈0.15/0.38; repeated notes
+  // IQR≲0.08, varied warble ≳0.25), deliberately widened.
+  types:{w:[3.0,4.0,1.1,-2.5],t:[2.6,3.6,1.2,-2.4],h:[0.6,2.2,1.1,-2.8],c:[1.2,2.4,1.5,-1.2],n:[-1.4,-0.3,1.1,-1.5],p:[-1.8,-0.7,1.2,-1.3]},
+  sigIQR:0.45,
+  wideScale:1.75,bgUniform:0.1,
+  temp:0.7,                   // likelihood temperature (calibration; NLL-optimal on training seeds)
+  pOther:0.12,                // prior mass of "a species not in the catalogue"
+  regionIn:0.9,               // prior mass on species listed for the user's region
+  bandLn:[Math.log(150),Math.log(12000)],rateLn:[Math.log(0.7),Math.log(40)]
+};
+const LN_SQRT_2PI=0.5*Math.log(2*Math.PI);
+function logNorm(x,mu,s){const z=(x-mu)/s;return -0.5*z*z-Math.log(s)-LN_SQRT_2PI;}
+// Normalised "plateau" density on [a,b] with Gaussian tails of width s (proper: integrates to 1).
+function logPlateau(x,a,b,s){const d=x<a?a-x:x>b?x-b:0;return -0.5*(d/s)**2-Math.log((b-a)+Math.sqrt(2*Math.PI)*s);}
+const logMix=(la,lb,w)=>{const m=Math.max(la,lb);return m+Math.log((1-w)*Math.exp(la-m)+w*Math.exp(lb-m));};
+const logit=p=>{const q=Math.min(0.99,Math.max(0.01,p));return Math.log(q/(1-q));};
+
+// Feature vector derived once per recording from analyzePCM() output.
+function featureVector(a){
+  const peaks=(a.peaks||[]).slice(0,5),K=peaks.length;
+  return{lnPk:peaks.map(p=>Math.log(p.hz)),wPk:peaks.map(p=>0.7*p.share+0.3/Math.max(1,K)),
+    lnF5:a.f5?Math.log(a.f5):null,lnF95:a.f95?Math.log(a.f95):null,
+    u1:logit(a.conc1||0),u3:logit(a.conc3||0),lnRate:a.noteRate?Math.log(a.noteRate):null,
+    v:a.pitchIQR!=null?Math.log(a.pitchIQR+0.02):null};
 }
-// Shared Gaussian similarity, hoisted to module scope so scoreSpecies (called up
-// to ~220 times per classification, once per species) never reallocates a closure.
-function gauss(x,mu,sigma){return Math.exp(-0.5*Math.pow((x-mu)/sigma,2));}
-// Scoring weights — chosen by grid sweeps against a 219-species self-recognition
-// benchmark (tests/accuracy-benchmark.mjs), not hand-picked. First pass: 333 configs
-// against a single clean-noise condition. Second pass: 96 configs re-checked against
-// the realistic scenario (region-filtered + moderate noise, single-attempt accuracy,
-// not optimistic best-of-N) that matches the app's actual default usage. The second
-// sweep moved the needle by under 1.5 percentage points across every metric — evidence
-// this 3-feature model (peak match / range coverage / centroid) has hit its practical
-// ceiling; a bandwidth-matching term was also tried at multiple weights and never beat
-// zero, since a weighted-std estimate from a handful of scattered peaks is too noisy
-// to trust. Meaningfully surpassing this would need new, independently-verifiable
-// acoustic features (e.g. real recording data), not further weight tuning.
-const SCORE_W={sigmaPeak:700,wPeak:0.90,wRange:0.05,wCentroid:0.05,specBase:1200};
-function scoreSpecies(feats,bird){
-  if(feats.peaks&&feats.peaks.length>0){
-    // Best peak: frequency match weighted by relative amplitude, so a loud true
-    // peak always outranks a quiet noise blip at a "better" frequency.
-    // peakMaxAmp/peakTotalAmp are precomputed once per recording in computeFeatures
-    // (they don't depend on `bird`) rather than recomputed on every species call.
-    const maxAmp=feats.peakMaxAmp||1;
-    const bestPeak=Math.max(...feats.peaks.map(p=>gauss(p.hz,bird.fdom,SCORE_W.sigmaPeak)*(0.5+0.5*p.amp/maxAmp)));
-    // Centroid corroboration (half weight — it's a softer signal)
-    const centroidScore=gauss(feats.centroid,bird.fdom,SCORE_W.sigmaPeak)*0.5;
-    // Range coverage: what fraction of detected peak energy falls within [fmin,fmax],
-    // weighted by specificity — matching a narrow, well-defined range is stronger
-    // evidence than matching a broad range that most recordings would satisfy anyway.
-    const totalAmp=feats.peakTotalAmp||0;
-    const inRangeAmp=feats.peaks.filter(p=>p.hz>=bird.fmin&&p.hz<=bird.fmax).reduce((s,p)=>s+p.amp,0);
-    const specificity=SCORE_W.specBase/(SCORE_W.specBase+(bird.fmax-bird.fmin));
-    const rangeScore=(totalAmp>0?inRangeAmp/totalAmp:0)*(0.55+0.45*specificity);
-    return bestPeak*SCORE_W.wPeak+rangeScore*SCORE_W.wRange+centroidScore*SCORE_W.wCentroid;
-  }else{
-    // Fallback: no peaks detected — use raw spectral peak and centroid
-    return gauss(feats.peak,bird.fdom,1500)*.45+gauss(feats.centroid,bird.fdom,1500)*.35
-          +(feats.peak>=bird.fmin&&feats.peak<=bird.fmax?.15:.05);
+// Background (log-uniform) log-densities per term.
+const BG={peak:-Math.log(MODEL.bandLn[1]-MODEL.bandLn[0]),rate:-Math.log(MODEL.rateLn[1]-MODEL.rateLn[0]),
+  type:x=>logNorm(x.u1,1.0,2.4)+logNorm(x.u3,2.0,2.4)+(x.v!==null?logNorm(x.v,-1.9,1.2):0)};
+
+// b.x (when present) holds the species' own spread, texture and rate-detection rate measured from
+// real recordings (tools/fit-model.mjs); otherwise catalogue confidence and type prototypes apply.
+function logLik(x,b,wide=1){
+  const M=MODEL,X=b.x,ld=Math.log(b.fdom),out=M.outlier;
+  const sig=(X?Math.max(0.04,X.sp*M.spScale):M.sigPeak*M.cfScale[b.cf||"m"])*wide;
+  // peak: mixture over detected peaks; each may be fdom or (rarely) its octave
+  let lp=-Infinity;
+  for(let j=0;j<x.lnPk.length;j++){
+    const y=x.lnPk[j];
+    const l=logMix(logNorm(y,ld,sig),logMix(logNorm(y,ld+Math.LN2,sig),logNorm(y,ld-Math.LN2,sig),0.5),2*M.harm);
+    const m=Math.max(lp,l+Math.log(x.wPk[j]));lp=m+Math.log(Math.exp(lp-m)+Math.exp(l+Math.log(x.wPk[j])-m));
   }
-}
-function softmax(sc){const T=4,ex=sc.map(s=>Math.exp(s*T)),sum=ex.reduce((a,b)=>a+b,0);return ex.map(e=>e/sum);}
-function classifyBirds(feats,lat,lon){
-  const region=S.geoReady?getRegion(lat,lon):null;
-  let pool=BIRD_DB;
-  if(region){const reg=BIRD_DB.filter(b=>b.r.includes(region));if(reg.length>=5)pool=reg;}
-  const scored=pool.map(b=>({...b,raw:scoreSpecies(feats,b)})).sort((a,b)=>b.raw-a.raw);
-  const top=scored.slice(0,10),sm=softmax(top.map(b=>b.raw));
-  return top.slice(0,3).map((b,i)=>({...b,confidence:sm[i],in_region:!region||b.r.includes(region),gbif_confirmed:false,inat_confirmed:false,img:""}));
+  let L=x.lnPk.length?logMix(lp,BG.peak,out):0;
+  // band edges
+  if(x.lnF5!==null){
+    const sb=M.sigBand*(X?1:M.cfScale[b.cf||"m"])*wide,lmin=Math.log(b.fmin),lmax=Math.log(b.fmax);
+    L+=logMix(logPlateau(x.lnF5,lmin-M.tauBand,ld,sb),BG.peak,out)+logMix(logPlateau(x.lnF95,ld,lmax+M.tauBand,sb),BG.peak,out);
+  }
+  // descriptors, trusted with probability cTrust[c]
+  const tr=M.cTrust[b.c||"m"],T=X?[X.tx[0],X.tx[1],X.ts*M.tsScale,X.tx[2]]:M.types[b.t],sv=X?X.ts*M.tsScale:M.sigIQR;
+  if(T&&x.lnPk.length){const st=T[2]*wide;
+    L+=logMix(logNorm(x.u1,T[0],st)+logNorm(x.u3,T[1],st)+(x.v!==null?logNorm(x.v,T[3],sv*wide):0),BG.type(x),1-tr);}
+  const pd=Math.min(0.95,Math.max(0.05,X?X.rd:b.nr?M.rateDetect:M.rateNullDetect));
+  let lr;
+  if(b.nr){lr=x.lnRate===null?Math.log(1-pd)
+      :Math.log(pd)+logMix(logMix(logPlateau(x.lnRate,Math.log(b.nr[0]),Math.log(b.nr[1]),M.sigRate*wide),
+        logMix(logPlateau(x.lnRate-Math.LN2,Math.log(b.nr[0]),Math.log(b.nr[1]),M.sigRate*wide),logPlateau(x.lnRate+Math.LN2,Math.log(b.nr[0]),Math.log(b.nr[1]),M.sigRate*wide),0.5),0.15),BG.rate,out);}
+  else lr=x.lnRate===null?Math.log(1-pd):Math.log(pd)+BG.rate;
+  const lrBg=x.lnRate===null?Math.log(0.5):Math.log(0.5)+BG.rate;
+  L+=logMix(lr,lrBg,1-tr);
+  return L;
 }
 
-// ── Multi-source occurrence: GBIF + iNaturalist ───────────────────────────────
-async function gbifConfirm(results,lat,lon){
-  try{
-    const d=1.0;
-    const url=`https://api.gbif.org/v1/occurrence/search?classKey=212&hasCoordinate=true`
-      +`&decimalLatitude=${(lat-d).toFixed(2)},${(lat+d).toFixed(2)}`
-      +`&decimalLongitude=${(lon-d).toFixed(2)},${(lon+d).toFixed(2)}&limit=200`;
-    const ctrl=new AbortController(),tmo=setTimeout(()=>ctrl.abort(),6000);
-    const data=await fetch(url,{signal:ctrl.signal}).then(r=>r.json()).finally(()=>clearTimeout(tmo));
-    const seen=new Set((data.results||[]).map(r=>(r.species||"").toLowerCase()).filter(Boolean));
-    return results.map(r=>({...r,gbif_confirmed:seen.has(r.s.toLowerCase())}));
-  }catch(e){return results;}
+// Posterior over the catalogue + open-set class. prior(b) returns an unnormalised prior weight.
+function posterior(analysis,pool,prior){
+  const x=featureVector(analysis),M=MODEL;
+  const L=pool.map(b=>logLik(x,b)),Lw=pool.map(b=>logLik(x,b,M.wideScale));
+  // open-set likelihood: an unknown bird looks like "some catalogue bird, more loosely",
+  // plus a log-uniform floor
+  const mw=Math.max(...Lw);let s=0;for(const l of Lw)s+=Math.exp(l-mw);
+  let lu=(x.lnPk.length?BG.peak:0)+(x.lnF5!==null?2*BG.peak:0)+(x.lnPk.length?BG.type(x):0)+(x.lnRate===null?Math.log(0.5):Math.log(0.5)+BG.rate);
+  const lOther=logMix(mw+Math.log(s/pool.length),lu,M.bgUniform);
+  const pr=pool.map(prior),pz=pr.reduce((a,b)=>a+b,0);
+  const lj=pool.map((b,i)=>L[i]/M.temp+Math.log(pr[i]/pz*(1-M.pOther)));lj.push(lOther/M.temp+Math.log(M.pOther));
+  const mx=Math.max(...lj),z=lj.reduce((a,l)=>a+Math.exp(l-mx),0);
+  const post=lj.map(l=>Math.exp(l-mx)/z);
+  return{species:pool.map((b,i)=>({b,p:post[i],ll:L[i]})).sort((a,c)=>c.p-a.p),pOther:post[pool.length],lOther};
 }
-async function inatConfirm(results,lat,lon){
-  try{
-    const url=`https://api.inaturalist.org/v1/observations?taxon_name=aves`
-      +`&verifiable=true&quality_grade=research`
-      +`&lat=${lat.toFixed(4)}&lng=${lon.toFixed(4)}&radius=75&per_page=100`;
-    const ctrl=new AbortController(),tmo=setTimeout(()=>ctrl.abort(),6000);
-    const data=await fetch(url,{signal:ctrl.signal}).then(r=>r.json()).finally(()=>clearTimeout(tmo));
-    const seen=new Set((data.results||[])
-      .map(r=>r.taxon?.name?.toLowerCase()).filter(Boolean));
-    return results.map(r=>({...r,inat_confirmed:seen.has(r.s.toLowerCase())}));
-  }catch(e){return results;}
+
+// ── Regions + spatio-temporal occurrence prior ────────────────────────────────
+// Biogeographic realms as lat/lon boxes [realm, lat0, lat1, lon0, lon1]. A point may lie in
+// several (Panama, the Levant, the Maghreb, Wallacea); Hawaii maps to none of the catalogue realms.
+const REGION_BOXES=[["na",13,84,-170,-50],["na",50,72,-180,-170],["na",7,13,-93,-77],["sa",-56,13,-92,-30],
+  ["eu",35,72,-25,45],["eu",27,37.5,-18,35],["eu",30,42,26,45],["af",-35,37.5,-18,52],["af",-27,-10,52,58],
+  ["as",0,82,63,180],["as",-9,0,63,131],["as",42,82,45,63],["as",12,42,34,63],["au",-48,-10,112,180],["au",-11,0,131,156]];
+const REGION_NAME={na:"N & C America",sa:"South America",eu:"Europe",as:"Asia",af:"Africa",au:"Australasia"};
+function getRegions(lat,lon){
+  if(lat>=15&&lat<=30&&lon<=-150)return[];
+  return[...new Set(REGION_BOXES.filter(([,a,b,c,d])=>lat>=a&&lat<=b&&lon>=c&&lon<=d).map(r=>r[0]))];
 }
-async function confirmAllSources(results,lat,lon){
-  const [gR,iR]=await Promise.allSettled([gbifConfirm(results,lat,lon),inatConfirm(results,lat,lon)]);
-  const g=gR.status==="fulfilled"?gR.value:results;
-  const n=iR.status==="fulfilled"?iR.value:results;
-  return results.map((_,i)=>({...results[i],gbif_confirmed:g[i]?.gbif_confirmed??false,inat_confirmed:n[i]?.inat_confirmed??false}));
+// Soft region prior: MODEL.regionIn of the prior MASS goes to species listed for the user's
+// realm(s), the rest is spread over all others — catalogue range lists are incomplete, and a hard
+// filter would veto real visitors.
+function regionPrior(regions,pool){
+  if(!regions||!regions.length)return()=>1;
+  const inR=b=>b.r.some(r=>regions.includes(r)),kin=pool.filter(inR).length,kout=pool.length-kin;
+  if(!kin||!kout)return()=>1;
+  return b=>inR(b)?MODEL.regionIn/kin:(1-MODEL.regionIn)/kout;
+}
+// Local, seasonal occurrence (iNaturalist research-grade counts within 50 km, this month ±1)
+// replaces the region prior when available: p ∝ (1−ε)·share^γ/Z + ε/K. γ<1 tempers observer
+// bias toward conspicuous birds (photo counts ≠ how vocal a species is); ε keeps unrecorded
+// species possible. GBIF counts then re-weight only WITHIN the top-5 block (gbifReweight).
+const OCC={gamma:0.5,eps:0.1,gbifGamma:0.3,radiusKm:50,ttlMs:7*864e5};
+const binom=n=>String(n||"").toLowerCase().split(/\s+/).slice(0,2).join(" ");
+function seasonMonths(d=new Date()){const m=d.getMonth()+1;return[(m+10)%12+1,m,m%12+1];}
+async function fetchJSON(url,ms=6000){
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
+  try{const r=await fetch(url,{signal:c.signal});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json();}
+  finally{clearTimeout(t);}
+}
+async function fetchOccurrence(lat,lon){
+  const months=seasonMonths(),key=`chirping:occ:${lat.toFixed(1)},${lon.toFixed(1)}:${months[1]}`;
+  try{const c=JSON.parse(localStorage.getItem(key)||"null");if(c&&Date.now()-c.t<OCC.ttlMs)return c.d;}catch(e){}
+  try{
+    const d=await fetchJSON(`https://api.inaturalist.org/v1/observations/species_counts?taxon_id=3`
+      +`&lat=${lat.toFixed(4)}&lng=${lon.toFixed(4)}&radius=${OCC.radiusKm}&month=${months.join(",")}`
+      +`&verifiable=true&captive=false&quality_grade=research&per_page=500`);
+    const counts={};let total=0,minC=Infinity;
+    for(const r of d.results||[]){const nm=binom(r.taxon?.name);if(!nm.includes(" "))continue;
+      counts[nm]=(counts[nm]||0)+(r.count||0);total+=r.count||0;minC=Math.min(minC,r.count||0);}
+    // >500 species: an absent species is not "zero records", only "fewer than the rarest listed".
+    const truncated=(d.total_results||0)>(d.results||[]).length;
+    const occ={src:"iNaturalist",counts,total,nSpecies:Object.keys(counts).length,months,floor:truncated&&isFinite(minC)?minC/2:0};
+    try{localStorage.setItem(key,JSON.stringify({t:Date.now(),d:occ}));}catch(e){}
+    return occ;
+  }catch(e){return null;} // offline, blocked or slow → region prior
+}
+function occCount(occ,b){
+  if(!occ||!(occ.nSpecies>=20))return null;
+  for(const n of [b.s,...(b.sy||[])]){const c=occ.counts[binom(n)];if(c)return c;}
+  return 0;
+}
+function makePrior(pool,regions,occ){
+  if(!occ||!(occ.nSpecies>=20))return regionPrior(regions,pool);
+  const K=pool.length,sh=pool.map(b=>(occCount(occ,b)||occ.floor)/occ.total);
+  const z=sh.reduce((s,v)=>s+v**OCC.gamma,0)||1,w=new Map(pool.map((b,i)=>[b,(1-OCC.eps)*sh[i]**OCC.gamma/z+OCC.eps/K]));
+  return b=>w.get(b);
+}
+async function gbifCounts(names,lat,lon){
+  const dLat=0.45,dLon=0.45/Math.max(0.2,Math.cos(lat*Math.PI/180)); // ≈ the 50 km iNat radius
+  const q=`&decimalLatitude=${(lat-dLat).toFixed(3)},${(lat+dLat).toFixed(3)}&decimalLongitude=${(lon-dLon).toFixed(3)},${(lon+dLon).toFixed(3)}`
+    +seasonMonths().map(m=>`&month=${m}`).join("")+"&occurrenceStatus=PRESENT&hasCoordinate=true&hasGeospatialIssue=false&limit=0";
+  const base="https://api.gbif.org/v1/occurrence/search?";
+  const counts=await Promise.all(names.map(n=>fetchJSON(base+"scientificName="+encodeURIComponent(n)+q).then(d=>d.count??null).catch(()=>null)));
+  return{counts};
+}
+// Partial normalisation: GBIF counts are only known for the top block, so they may only move
+// probability between those candidates — the block's total mass, and everything outside it, stay.
+function gbifReweight(results,g){
+  const mass=results.reduce((s,r)=>s+r.confidence,0);
+  const w=results.map((r,i)=>r.confidence*((g.counts[i]??0)+1)**OCC.gbifGamma),ws=w.reduce((a,b)=>a+b,0)||1;
+  return results.map((r,i)=>({...r,confidence:w[i]/ws*mass,gbifN:g.counts[i]})).sort((x,y)=>y.confidence-x.confidence);
 }
 
 // ── Images: Wikipedia → iNaturalist fallback ──────────────────────────────────
@@ -1463,85 +1803,92 @@ async function fetchXenoAudio(sciName){
 }
 
 // ── Main flow ─────────────────────────────────────────────────────────────────
+const TYPE_NAME={w:"whistled",h:"harmonic",n:"harsh / buzzy",t:"trilled",c:"varied warble",p:"percussive"};
+function khz(f){return(f/1000).toFixed(f<1000?2:1);}
+function showFeatures(a){
+  $("fPeak").textContent=a.peak?Math.round(a.peak).toLocaleString("en-US")+" Hz":"—";
+  $("fBand").textContent=a.f5?`${khz(a.f5)}–${khz(a.f95)} kHz`:"—";
+  $("fSnr").textContent=isFinite(a.snrDb)?a.snrDb.toFixed(0)+" dB":"—";
+  $("fTone").textContent=a.peak?(a.conc1>=0.85?"tonal":a.conc1>=0.5?"mixed":"noisy")+` ${Math.round(a.conc1*100)}%`:"—";
+  $("fRate").textContent=a.noteRate?a.noteRate.toFixed(1)+" /s":"—";
+}
 async function onStop(){
-  if(S._analyzed)return; // guard: recorder onstop + watchdog can both fire
+  if(S._analyzed)return; // guard: stop can be reached from the button, the 60 s limit and iOS interruption
   S._analyzed=true;
-  if(S.recSec<2){
+  const dur=S.nSamples/(S.fs||1);
+  if(!S.analyzer||dur<2){
     statusMsg.textContent="Hold for at least 2 seconds — tap to try again.";
     toast("Hold the button for at least 2 seconds near the bird.");return;
   }
-  const feats=computeFeatures(S.fftFrames);
-  $("fPeak").textContent    =feats.peak    ?feats.peak+" Hz":"—";
-  $("fCent").textContent    =feats.centroid?feats.centroid+" Hz":"—";
-  $("fPeaks").textContent   =feats.peaks?.length?feats.peaks.slice(0,3).map(p=>Math.round(p.hz/100)/10+"k").join(" "):"—";
-  $("fDur").textContent     =feats.duration?feats.duration.toFixed(1)+" s":"—";
-  if(feats.signal<0.006){
-    statusMsg.textContent="No sound detected — try getting closer.";
-    toast("Mic is too quiet. Get closer to the bird, or check mic permissions.");return;
+  showLoad("Measuring the recording…");
+  await new Promise(r=>setTimeout(r,30)); // let the spinner paint before the final pass
+  const a=S.analyzer.finish();S.analyzer=null;S.lastAnalysis=a;
+  showFeatures(a);
+  if(a.silent||!a.peaks.length){
+    hideLoad();statusMsg.textContent="No bird sound detected — try getting closer.";
+    toast(`Nothing rose clearly above the background noise${isFinite(a.snrDb)?` (SNR ${a.snrDb.toFixed(0)} dB)`:""}. Get closer, or check mic permissions.`);return;
   }
-  if(feats.activeRatio<0.03){
-    toast("Very little bird activity detected — try recording louder or closer.");
-  }
-  const peakHint=feats.peaks.length
-    ?`Detected peaks at ${feats.peaks.slice(0,3).map(p=>Math.round(p.hz/100)/10+"kHz").join(", ")} — matching species…`
-    :"Matching spectral database…";
-  showLoad(peakHint);
+  if(a.clipFrac>1e-3)toast("Input clipped — the sound was too loud for the mic; move back a little.");
+  else if(a.windFrac>0.3)toast("Strong wind noise — shield the microphone for a cleaner measurement.");
   try{
-    let results=classifyBirds(feats,S.lat,S.lon);
+    const regions=S.geoReady?getRegions(S.lat,S.lon):[];
+    setStep("Weighing local, seasonal records…");
+    const occ=await Promise.race([S.occP||Promise.resolve(null),new Promise(r=>setTimeout(()=>r(null),6500))]);
+    const post=posterior(a,BIRD_DB,makePrior(BIRD_DB,regions,occ));
+    let results=post.species.slice(0,5).map(e=>({...e.b,confidence:e.p,
+      in_region:!regions.length||e.b.r.some(r=>regions.includes(r)),occN:occCount(occ,e.b),gbifN:null}));
     if(S.geoReady){
-      setStep("Checking geographic records (GBIF + iNat)…");
-      results=await confirmAllSources(results,S.lat,S.lon);
-      const w=results.map(r=>{
-        const both=r.gbif_confirmed&&r.inat_confirmed;
-        const one=r.gbif_confirmed||r.inat_confirmed;
-        return r.confidence*(both?1.50:one?1.35:r.in_region?1.0:0.80);
-      });
-      const ws=w.reduce((a,b)=>a+b,0);
-      results.forEach((r,i)=>{r.confidence=ws>0?w[i]/ws:r.confidence;});
-      results.sort((a,b)=>b.confidence-a.confidence);
+      setStep("Cross-checking GBIF records nearby…");
+      const g=await gbifCounts(results.map(r=>r.s),S.lat,S.lon).catch(()=>null);
+      if(g&&g.counts.some(c=>c!==null))results=gbifReweight(results,g);
     }
     setStep("Fetching bird photos and reference audio…");
-    await Promise.allSettled(results.map(async b=>{
+    await Promise.allSettled(results.slice(0,3).map(async b=>{
       [b.img,b.audioUrl]=await Promise.all([getImage(b.w,b.s),fetchXenoAudio(b.s)]);
     }));
-    hideLoad();statusMsg.textContent="Tap to record again";showResults(results,feats);
+    hideLoad();statusMsg.textContent="Tap to record again";showResults(results,a,post,occ,regions);
   }catch(e){hideLoad();toast("Error: "+e.message);statusMsg.textContent="Tap to try again.";console.error(e);}
 }
 
 // ── Results ───────────────────────────────────────────────────────────────────
-function showResults(results,feats){
+function showResults(results,a,post,occ,regions){
   cardsEl.innerHTML="";
   if(!results.length){cardsEl.innerHTML=`<p style="color:var(--muted);padding:.5rem">No match — try in a quieter spot closer to the bird.</p>`;resultsEl.classList.add("show");return;}
+  const top=results.slice(0,3),shown=top.reduce((s,r)=>s+r.confidence,0);
+  $("resTitle").textContent=top[0].confidence<0.25?"Uncertain — closest matches":"Top 3 Matches";
   const loc=S.geoReady?`${Math.abs(S.lat).toFixed(1)}°${S.lat>=0?"N":"S"} ${Math.abs(S.lon).toFixed(1)}°${S.lon>=0?"E":"W"}`:"global";
-  const peakStr=feats.peaks.length
-    ?feats.peaks.slice(0,3).map(p=>Math.round(p.hz/100)/10+"kHz").join(", ")
-    :feats.peak+" Hz";
-  const actStr=feats.activeRatio>0.05
-    ?`${Math.round(feats.activeRatio*100)}% bird activity`
-    :"low bird activity";
-  resMeta.textContent=`${feats.duration.toFixed(1)}s · peaks: ${peakStr} · ${actStr} · ${loc}`;
-  results.slice(0,3).forEach((b,i)=>cardsEl.appendChild(makeCard(b,i+1)));
+  const prior=occ&&occ.nSpecies>=20?`prior: ${occ.src} ≤${OCC.radiusKm} km, ${occ.months.map(m=>MONTHS[m-1]).join("–")}`
+    :regions.length?`prior: ${regions.map(r=>REGION_NAME[r]).join(" / ")}`:"prior: none";
+  resMeta.textContent=`${a.duration.toFixed(1)} s · peak ${Math.round(a.peak)} Hz · ${khz(a.f5)}–${khz(a.f95)} kHz · SNR ${a.snrDb.toFixed(0)} dB · ${loc} · ${prior}`;
+  top.forEach((b,i)=>cardsEl.appendChild(makeCard(b,i+1)));
+  // Where the rest of the probability is: honest bookkeeping instead of renormalising to 100 %.
+  const alike=results.slice(3).filter(r=>r.confidence>=0.5*top[top.length-1].confidence).map(r=>r.n);
+  const note=document.createElement("p");note.className="res-note";
+  note.textContent=`Other catalogue species: ${Math.round(Math.max(0,1-shown-post.pOther)*100)}% · `
+    +`possibly a species not in this ${BIRD_DB.length}-species catalogue: ${Math.round(post.pOther*100)}%`
+    +(alike.length?` · also consistent: ${alike.join(", ")}`:"");
+  cardsEl.appendChild(note);
   resultsEl.classList.add("show");
   setTimeout(()=>{
     document.querySelectorAll(".conf-fill").forEach((el,i)=>{
-      setTimeout(()=>{el.style.width=Math.min(100,(results[i]?.confidence||0)*100).toFixed(1)+"%";},60);
+      setTimeout(()=>{el.style.width=Math.min(100,(top[i]?.confidence||0)*100).toFixed(1)+"%";},60);
     });
   },50);
 }
+const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function makeCard(b,rank){
-  const conf=Math.min(1,b.confidence||.05),pct=Math.max(1,Math.round(conf*100));
-  const cls=conf>=.50?"hi":conf>=.25?"md":"lo";
+  const conf=Math.min(1,b.confidence||0),pct=conf<0.01?"<1":String(Math.round(conf*100));
+  const cls=conf>=.50?"hi":conf>=.20?"md":"lo";
   let bc,bt;
-  if(b.gbif_confirmed&&b.inat_confirmed){bc="rgn-ok";bt="✓ GBIF + iNat confirmed";}
-  else if(b.gbif_confirmed){bc="rgn-ok";bt="✓ GBIF confirmed nearby";}
-  else if(b.inat_confirmed){bc="rgn-ok";bt="✓ iNat confirmed nearby";}
-  else if(b.in_region){bc="rgn-typ";bt="Typical for your region";}
-  else{bc="rgn-no";bt="⚠ Uncommon here";}
+  if(b.occN>0||b.gbifN>0){bc="rgn-ok";bt="✓ "+[b.occN>0?`${b.occN} iNat`:"",b.gbifN>0?`${b.gbifN} GBIF`:""].filter(Boolean).join(" + ")+" records nearby this season";}
+  else if(b.occN===0){bc="rgn-no";bt="⚠ No nearby records this season";}
+  else if(b.in_region){bc="rgn-typ";bt="Listed for your region";}
+  else{bc="rgn-no";bt="⚠ Not usually in your region";}
   const xeno=`https://xeno-canto.org/explore?query=${encodeURIComponent(b.s)}`;
   const fb=`data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' fill='%230d1525'/%3E%3Ctext y='52' x='40' text-anchor='middle' font-size='36'%3E%F0%9F%90%A6%3C/text%3E%3C/svg%3E`;
   const art=document.createElement("article");
   art.className="bcard";art.setAttribute("role","listitem");
-  art.setAttribute("tabindex","0");art.setAttribute("aria-label",`Rank ${rank}: ${b.n}, ${pct}% confidence`);
+  art.setAttribute("tabindex","0");art.setAttribute("aria-label",`Rank ${rank}: ${b.n}, ${pct}% probability`);
   art.innerHTML=`
     <div class="bcard-rank rank-${rank}" aria-hidden="true">${rank}</div>
     <div class="bcard-inner">
@@ -1549,12 +1896,12 @@ function makeCard(b,rank){
       <div class="bcard-body">
         <div class="bcard-common">${esc(b.n)}</div>
         <div class="bcard-sci">${esc(b.s)}</div>
-        <div class="conf-row"><span>Confidence</span><span class="conf-pct">${pct}%</span></div>
-        <div class="conf-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
+        <div class="conf-row"><span>Probability</span><span class="conf-pct">${pct}%</span></div>
+        <div class="conf-bar" role="progressbar" aria-valuenow="${Math.round(conf*100)}" aria-valuemin="0" aria-valuemax="100">
           <div class="conf-fill ${cls}"></div>
         </div>
-        <span class="rgn-badge ${bc}">${bt}</span>
-        <div class="freq-tag">&#x1F3B5; ${b.fmin}–${b.fmax} Hz (peak ${b.fdom} Hz)</div>
+        <span class="rgn-badge ${bc}">${esc(bt)}</span>
+        <div class="freq-tag">&#x1F3B5; ${b.fmin}–${b.fmax} Hz (peak ${b.fdom} Hz) · ${TYPE_NAME[b.t]||""}${b.nr?` · ${b.nr[0]}–${b.nr[1]} notes/s`:""}</div>
       </div>
     </div>
     <div class="bcard-detail">
